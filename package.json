@@ -34,7 +34,8 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.45.4",
     "tailwind-merge": "^2.0.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.9.0",

@@ -1,17 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { RelatorioParams } from '@/types';
 
-// Create a simple client without strict typing for compatibility
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Usar cliente sem tipagem estrita para evitar conflitos
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-});
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export class RelatoriosService {
   // Gerar relatório de atendimentos
@@ -97,7 +91,7 @@ export class RelatoriosService {
 
     // Calcular estatísticas
     const totalAtendimentos = dados.length;
-    
+
     const porStatus = dados.reduce((acc, item) => {
       acc[item.status] = (acc[item.status] || 0) + 1;
       return acc;
@@ -128,7 +122,7 @@ export class RelatoriosService {
       item => item.status === 'Concluído'
     ).length;
 
-    const taxaConclusao = totalAtendimentos > 0 ? 
+    const taxaConclusao = totalAtendimentos > 0 ?
       Math.round((atendimentosConcluidos / totalAtendimentos) * 100) : 0;
 
     return {

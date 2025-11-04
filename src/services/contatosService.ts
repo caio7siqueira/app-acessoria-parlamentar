@@ -1,17 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Contato, ContatoForm } from '@/types';
 
-// Create a simple client without strict typing for compatibility
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Usar cliente sem tipagem estrita para evitar conflitos
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-});
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export class ContatosService {
   // Buscar todos os contatos

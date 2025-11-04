@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   images: {
     domains: ['localhost'],
   },
@@ -29,7 +26,7 @@ const nextConfig = {
       },
     ];
   },
-  // Service Worker
+  // Service Worker & Supabase Optimization
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -39,7 +36,24 @@ const nextConfig = {
         tls: false,
       };
     }
+
+    // Suprimir warnings críticos do Supabase (não são erros reais)
+    config.ignoreWarnings = [
+      {
+        module: /node_modules\/@supabase\//,
+        message: /Critical dependency: the request of a dependency is an expression/,
+      },
+    ];
+
     return config;
+  },
+
+  // Transpilação de módulos ES para melhor compatibilidade
+  transpilePackages: ['@supabase/supabase-js'],
+
+  // Configurações experimentais para performance
+  experimental: {
+    optimizeCss: true,
   },
 };
 

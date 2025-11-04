@@ -1,30 +1,60 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
+import { validateEnvironment, logEnvironmentStatus } from '@/lib/environment';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Singleton clients
+let _supabase: SupabaseClient<Database> | null = null;
+let _supabaseAdmin: SupabaseClient<Database> | null = null;
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
+/**
+ * Obtém o cliente Supabase principal (lazy loaded)
+ */
+export function getSupabaseClient(): SupabaseClient<Database> {
+  if (!_supabase) {
+    const env = validateEnvironment();
+
+    // Log de debug apenas uma vez
+    if (process.env.NODE_ENV === 'development') {
+      logEnvironmentStatus();
+    }
+
+    _supabase = createClient<Database>(env.supabaseUrl, env.supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    });
+  }
+
+  return _supabase;
+}
+
+/**
+ * Obtém o cliente Supabase Admin (lazy loaded)
+ */
+export function getSupabaseAdmin(): SupabaseClient<Database> | null {
+  if (!_supabaseAdmin) {
+    const env = validateEnvironment();
+
+    if (env.supabaseServiceRoleKey) {
+      _supabaseAdmin = createClient<Database>(env.supabaseUrl, env.supabaseServiceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
     }
   }
-});
 
-// Cliente para operações do servidor (com service role)
-export const supabaseAdmin = createClient<Database>(
-  supabaseUrl,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
+  return _supabaseAdmin;
+}
+
+// Exportações de compatibilidade (deprecated - use as funções acima)
+export const supabase = getSupabaseClient();
+export const supabaseAdmin = getSupabaseAdmin();

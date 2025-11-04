@@ -1,0 +1,36 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#3B82F6"/>
+  
+  <!-- Icon - Government Building -->
+  <g transform="translate(128, 128) scale(0.75)">
+    <!-- Base -->
+    <rect x="32" y="320" width="448" height="64" fill="white"/>
+    
+    <!-- Main building -->
+    <rect x="80" y="160" width="352" height="160" fill="white"/>
+    
+    <!-- Columns -->
+    <rect x="120" y="160" width="24" height="160" fill="#3B82F6"/>
+    <rect x="168" y="160" width="24" height="160" fill="#3B82F6"/>
+    <rect x="216" y="160" width="24" height="160" fill="#3B82F6"/>
+    <rect x="264" y="160" width="24" height="160" fill="#3B82F6"/>
+    <rect x="312" y="160" width="24" height="160" fill="#3B82F6"/>
+    <rect x="360" y="160" width="24" height="160" fill="#3B82F6"/>
+    
+    <!-- Roof -->
+    <polygon points="256,64 80,160 432,160" fill="white"/>
+    
+    <!-- Flag -->
+    <rect x="240" y="48" width="32" height="112" fill="white"/>
+    <rect x="272" y="48" width="80" height="32" fill="#EF4444"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="256" y="450" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">
+    Assessoria
+  </text>
+  <text x="256" y="480" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24">
+    Parlamentar
+  </text>
+</svg>

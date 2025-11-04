@@ -1,24 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
-import type { 
-  Atendimento, 
-  AtendimentoForm, 
-  FiltrosAtendimento, 
-  PaginacaoParams, 
+import type {
+  Atendimento,
+  AtendimentoForm,
+  FiltrosAtendimento,
+  PaginacaoParams,
   PaginacaoResponse,
-  DashboardStats 
+  DashboardStats
 } from '@/types';
 
-// Create a simple client without strict typing for compatibility
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Usar cliente sem tipagem estrita para evitar conflitos
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-});
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export class AtendimentosService {
   // Buscar atendimentos com filtros e paginação
@@ -105,7 +99,7 @@ export class AtendimentosService {
   // Criar novo atendimento
   static async criar(atendimento: AtendimentoForm): Promise<Atendimento> {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     const { data, error } = await supabase
       .from('atendimentos')
       .insert({
@@ -195,12 +189,12 @@ export class AtendimentosService {
     const { data: statusData } = await supabase
       .from('atendimentos')
       .select('status');
-    
+
     const contagem: Record<string, number> = {};
     (statusData as any)?.forEach((item: any) => {
       contagem[item.status] = (contagem[item.status] || 0) + 1;
     });
-    
+
     const porStatus = Object.entries(contagem).map(([status, quantidade]) => ({
       status,
       quantidade
@@ -210,12 +204,12 @@ export class AtendimentosService {
     const { data: canalData } = await supabase
       .from('atendimentos')
       .select('canal');
-    
+
     const canalContagem: Record<string, number> = {};
     (canalData as any)?.forEach((item: any) => {
       canalContagem[item.canal] = (canalContagem[item.canal] || 0) + 1;
     });
-    
+
     const porCanal = Object.entries(canalContagem).map(([canal, quantidade]) => ({
       canal,
       quantidade
@@ -226,14 +220,14 @@ export class AtendimentosService {
       .from('atendimentos')
       .select('secretaria')
       .not('secretaria', 'is', null);
-      
+
     const secretariaContagem: Record<string, number> = {};
     (secretariaData as any)?.forEach((item: any) => {
       if (item.secretaria) {
         secretariaContagem[item.secretaria] = (secretariaContagem[item.secretaria] || 0) + 1;
       }
     });
-    
+
     const porSecretaria = Object.entries(secretariaContagem).map(([secretaria, quantidade]) => ({
       secretaria,
       quantidade
@@ -243,12 +237,12 @@ export class AtendimentosService {
     const { data: urgenciaData } = await supabase
       .from('atendimentos')
       .select('prazo_urgencia');
-      
+
     const urgenciaContagem: Record<string, number> = {};
     (urgenciaData as any)?.forEach((item: any) => {
       urgenciaContagem[item.prazo_urgencia] = (urgenciaContagem[item.prazo_urgencia] || 0) + 1;
     });
-    
+
     const porUrgencia = Object.entries(urgenciaContagem).map(([urgencia, quantidade]) => ({
       urgencia,
       quantidade
@@ -269,7 +263,7 @@ export class AtendimentosService {
   static subscribeToChanges(callback: (payload: any) => void) {
     return supabase
       .channel('atendimentos-changes')
-      .on('postgres_changes', 
+      .on('postgres_changes',
         { event: '*', schema: 'public', table: 'atendimentos' },
         callback
       )
