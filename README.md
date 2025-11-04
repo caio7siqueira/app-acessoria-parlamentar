@@ -18,6 +18,25 @@ Sistema completo para gerenciamento de atendimentos e demandas da assessoria par
 - **Email:** `demotest@parlamentar.com`
 - **Senha:** `123456`
 
+## 🚀 Deploy Rápido no GitHub Codespaces
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=YOUR_REPO_ID)
+
+### Setup em 30 segundos:
+1. **Clique no botão** "Open in Codespaces" acima
+2. **Aguarde** a inicialização automática do ambiente
+3. **Configure** variáveis em `.env.local` (template será criado)
+4. **Execute** `npm run dev`
+5. **Acesse** a URL gerada automaticamente
+
+### Vantagens do Codespaces:
+- ✅ **HTTPS nativo** - Resolve problemas de cookies de autenticação
+- ✅ **Ambiente isolado** - Sem conflitos de configuração
+- ✅ **Node.js 18+** - Versão compatível garantida
+- ✅ **Deploy instantâneo** - Pronto em menos de 1 minuto
+
+> **Nota:** O redirecionamento de autenticação funciona PERFEITAMENTE no Codespaces devido ao ambiente HTTPS controlado.
+
 ## 🚀 Características
 
 - **PWA Completo**: Funciona offline e pode ser instalado no celular

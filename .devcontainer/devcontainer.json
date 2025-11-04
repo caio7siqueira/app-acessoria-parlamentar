@@ -1,0 +1,38 @@
+{
+    "name": "Sistema Assessoria Parlamentar",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node:18",
+    "features": {
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "18"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "bradlc.vscode-tailwindcss",
+                "ms-vscode.vscode-typescript-next",
+                "esbenp.prettier-vscode",
+                "ms-vscode.vscode-json",
+                "ms-vscode.hexeditor"
+            ],
+            "settings": {
+                "editor.formatOnSave": true,
+                "typescript.preferences.includePackageJsonAutoImports": "auto"
+            }
+        }
+    },
+    "forwardPorts": [
+        3000,
+        3001
+    ],
+    "portsAttributes": {
+        "3000": {
+            "label": "Next.js App",
+            "onAutoForward": "notify"
+        }
+    },
+    "postCreateCommand": "npm install",
+    "postStartCommand": "echo '🚀 Codespace pronto! Execute: npm run dev'",
+    "remoteUser": "node"
+}
