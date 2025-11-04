@@ -1,0 +1,9 @@
+{
+  "/relatorios/page": "app/relatorios/page.js",
+  "/atendimentos/page": "app/atendimentos/page.js",
+  "/atendimentos/[id]/page": "app/atendimentos/[id]/page.js",
+  "/contatos/page": "app/contatos/page.js",
+  "/configuracoes/page": "app/configuracoes/page.js",
+  "/api/list-users/route": "app/api/list-users/route.js",
+  "/api/invite-user/route": "app/api/invite-user/route.js"
+}

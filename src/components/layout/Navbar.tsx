@@ -1,7 +1,8 @@
 'use client';
 
-import { Menu, Bell, Search } from 'lucide-react';
-import { useAuth } from '@/app/providers';
+import { Menu, Search } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import NotificationPanel from './NotificationPanel';
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -39,14 +40,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
         {/* Right side */}
         <div className="flex items-center space-x-4">
           {/* Notifications */}
-          <button
-            type="button"
-            className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-md relative"
-          >
-            <Bell className="h-6 w-6" />
-            {/* Notification badge */}
-            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
-          </button>
+          <NotificationPanel />
 
           {/* User avatar */}
           <div className="flex items-center">

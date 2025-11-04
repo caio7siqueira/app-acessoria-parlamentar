@@ -1,11 +1,11 @@
 'use client';
 
-import { useAuth } from '@/app/providers';
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Home, 
-  Users, 
+import {
+  Home,
+  Users,
   ClipboardList,
   Phone,
   BarChart3,
@@ -48,7 +48,7 @@ export function Sidebar({ onClose }: SidebarProps) {
             </h1>
           </div>
         </div>
-        
+
         {/* Botão fechar (mobile) */}
         {onClose && (
           <button
@@ -65,7 +65,7 @@ export function Sidebar({ onClose }: SidebarProps) {
       <nav className="flex-1 px-4 py-4 space-y-1">
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          
+
           return (
             <Link
               key={item.name}
@@ -110,7 +110,7 @@ export function Sidebar({ onClose }: SidebarProps) {
             </p>
           </div>
         </div>
-        
+
         <button
           onClick={handleSignOut}
           className="mt-3 w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"

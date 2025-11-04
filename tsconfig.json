@@ -28,7 +28,8 @@
       "@/hooks/*": ["./src/hooks/*"],
       "@/services/*": ["./src/services/*"],
       "@/types/*": ["./src/types/*"]
-    }
+    },
+    "ignoreDeprecations": "6.0"
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]

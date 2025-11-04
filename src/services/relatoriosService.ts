@@ -41,36 +41,58 @@ export class RelatoriosService {
 
   // Exportar para PDF
   static async exportarPDF(params: RelatorioParams): Promise<Blob> {
-    const response = await fetch('/api/relatorios/pdf', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(params),
-    });
-
-    if (!response.ok) {
-      throw new Error('Erro ao gerar PDF');
-    }
-
-    return response.blob();
+    // Por enquanto, vamos gerar CSV que é mais leve e universal
+    return this.exportarCSV(params);
   }
 
   // Exportar para Excel
   static async exportarExcel(params: RelatorioParams): Promise<Blob> {
-    const response = await fetch('/api/relatorios/excel', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(params),
-    });
+    return this.exportarCSV(params);
+  }
 
-    if (!response.ok) {
-      throw new Error('Erro ao gerar Excel');
-    }
+  // Exportar para CSV
+  static async exportarCSV(params: Omit<RelatorioParams, 'formato'>): Promise<Blob> {
+    const dados = await this.gerarRelatorio({ ...params, formato: 'pdf' }) as any[];
 
-    return response.blob();
+    // Cabeçalhos do CSV
+    const headers = [
+      'ID',
+      'Nome',
+      'Gênero',
+      'Endereço',
+      'Idade',
+      'Telefone',
+      'Solicitação',
+      'Prazo',
+      'Urgência',
+      'Encaminhamento',
+      'Secretaria',
+      'Status',
+      'Canal',
+      'Data Criação',
+    ];
+
+    // Converter dados para CSV
+    const linhas = dados.map((d) => [
+      d.id,
+      `"${d.nome?.replace(/"/g, '""') || ''}"`,
+      d.genero,
+      `"${d.endereco?.replace(/"/g, '""') || ''}"`,
+      d.idade || '',
+      d.telefone || '',
+      `"${d.solicitacao?.replace(/"/g, '""') || ''}"`,
+      d.prazo_data || '',
+      d.prazo_urgencia,
+      d.encaminhamento,
+      d.secretaria || '',
+      d.status,
+      d.canal,
+      new Date(d.data_criacao).toLocaleString('pt-BR'),
+    ].join(','));
+
+    const csv = [headers.join(','), ...linhas].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    return blob;
   }
 
   // Baixar arquivo

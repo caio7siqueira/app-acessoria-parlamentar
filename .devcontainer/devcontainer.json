@@ -1,10 +1,10 @@
 {
     "name": "Sistema Assessoria Parlamentar",
-    "image": "mcr.microsoft.com/devcontainers/typescript-node:18",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
     "features": {
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/devcontainers/features/node:1": {
-            "version": "18"
+            "version": "22"
         }
     },
     "customizations": {
@@ -14,7 +14,9 @@
                 "ms-vscode.vscode-typescript-next",
                 "esbenp.prettier-vscode",
                 "ms-vscode.vscode-json",
-                "ms-vscode.hexeditor"
+                "ms-vscode.hexeditor",
+                "GitHub.copilot",
+                "dbaeumer.vscode-eslint"
             ],
             "settings": {
                 "editor.formatOnSave": true,

@@ -1,74 +1,61 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/**
+ * Middleware de autenticação (permissivo)
+ * Observação importante:
+ * - Este projeto usa @supabase/supabase-js no cliente, que por padrão persiste sessão em localStorage, não em cookies.
+ * - O Middleware NÃO tem acesso ao localStorage, portanto não consegue confirmar auth de forma confiável.
+ *
+ * Estratégia adotada:
+ * - NUNCA bloquear a navegação por ausência de cookies (evita loops pós-login).
+ * - Apenas redirecionar usuários logados para fora de /login (quando possível detectar via cookies conhecidos).
+ * - Deixar a proteção efetiva para o client-side (AuthGuard/useAuth) nas rotas protegidas.
+ */
 export function middleware(request: NextRequest) {
-    // Rotas que não precisam de autenticação
-    const publicRoutes = ['/login', '/api', '/_next', '/favicon.ico', '/manifest.json', '/icons'];
+    const { pathname } = request.nextUrl;
+    const isDev = process.env.NODE_ENV === 'development';
 
-    // Verificar se a rota é pública
-    const isPublicRoute = publicRoutes.some(route =>
-        request.nextUrl.pathname.startsWith(route)
-    );
-
-    if (isPublicRoute) {
+    // Rotas públicas sempre liberadas
+    const publicPrefixes = ['/login', '/api', '/_next', '/favicon.ico', '/manifest.json', '/icons', '/public'];
+    const isPublic = publicPrefixes.some((prefix) => pathname.startsWith(prefix));
+    if (isPublic) {
         return NextResponse.next();
     }
 
-    // Para outras rotas, verificar autenticação
-    // Buscar cookies de autenticação do Supabase
-    const cookies = request.cookies;
-    let hasAuthCookie = false;
+    // Detectar indícios de sessão via cookies do Supabase (quando presentes)
+    const cookies = request.cookies.getAll();
+    const cookieNames = cookies.map((c) => c.name);
+    const hasKnownCookies = cookieNames.some((name) => (
+        name === 'sb-access-token' ||
+        name === 'sb-refresh-token' ||
+        name === 'supabase-auth-token' ||
+        name === 'supabase.auth.token' ||
+        /^sb-.*-auth-token$/.test(name)
+    ));
 
-    // Verificar cookies específicos do Supabase
-    const authCookies = [
-        'sb-access-token',
-        'sb-refresh-token',
-        'supabase-auth-token',
-        'supabase.auth.token'
-    ];
-
-    // Também verificar por padrões de cookies do Supabase
-    cookies.getAll().forEach(cookie => {
-        if (authCookies.includes(cookie.name) ||
-            cookie.name.startsWith('sb-') ||
-            cookie.name.includes('supabase') ||
-            cookie.name.includes('auth-token')) {
-            hasAuthCookie = true;
-        }
-    });
-
-    // Em desenvolvimento, ser mais permissivo
-    const isDev = process.env.NODE_ENV === 'development';
-    if (isDev) {
-        // No desenvolvimento, permitir acesso se há qualquer indicação de autenticação
-        const hasAnyAuthIndicator = cookies.getAll().some(cookie =>
-            cookie.name.includes('auth') ||
-            cookie.name.includes('token') ||
-            cookie.name.includes('session')
-        );
-
-        if (hasAnyAuthIndicator) {
-            hasAuthCookie = true;
-        }
+    // Se o usuário tentar acessar /login e já parecer autenticado por cookies, redirecionar para dashboard
+    if (pathname.startsWith('/login') && hasKnownCookies) {
+        const url = new URL('/', request.url);
+        const res = NextResponse.redirect(url);
+        res.headers.set('x-auth-debug', 'redirected-from-login-has-cookies');
+        return res;
     }
 
-    // Se não tiver cookies de auth, redirecionar para login
-    if (!hasAuthCookie) {
-        const loginUrl = new URL('/login', request.url);
-        loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
-        return NextResponse.redirect(loginUrl);
-    }
+    // NÃO bloquear acesso às rotas aqui. O guard do cliente fará o papel de proteger.
+    const res = NextResponse.next();
+    // Adicionar cabeçalhos de debug úteis
+    res.headers.set('x-auth-debug', [
+        'middleware=permissive',
+        `env=${isDev ? 'dev' : 'prod'}`,
+        `cookies=${cookieNames.join(',') || 'none'}`,
+    ].join('; '));
+    return res;
+}
 
-    return NextResponse.next();
-} export const config = {
+export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - api (API routes)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         */
-        '/((?!api|_next/static|_next/image|favicon.ico).*)',
+        // Ignorar rotas estáticas e assets
+        '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|icons).*)',
     ],
 };

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import BottomNav from './BottomNav';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -31,10 +33,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Conteúdo principal */}
       <div className="lg:pl-64">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
-        
-        <main className="py-6 px-4 sm:px-6 lg:px-8">
-          {children}
+
+        <main className="py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-6">
+          <AuthGuard>
+            {children}
+          </AuthGuard>
         </main>
+
+        {/* Bottom Navigation Mobile */}
+        <BottomNav />
       </div>
     </div>
   );

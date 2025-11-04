@@ -2,226 +2,203 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { AtendimentosService } from '@/services/atendimentosService';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Plus, Filter, Search } from 'lucide-react';
-import Link from 'next/link';
+import { Plus, Search, Calendar, Clock, AlertCircle, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export default function AtendimentosPage() {
-  const [filtros, setFiltros] = useState({});
-  const [busca, setBusca] = useState('');
-  const [paginacao, setPaginacao] = useState({ page: 1, limit: 10 });
+  const router = useRouter();
+  const [busca, setBusca] = useLocalStorage<string>('atendimentos_busca', '');
+  const [paginacao, setPaginacao] = useLocalStorage<{ page: number; limit: number }>('atendimentos_paginacao', { page: 1, limit: 10 });
 
   const { data: atendimentos, isLoading } = useQuery({
-    queryKey: ['atendimentos', filtros, busca, paginacao],
+    queryKey: ['atendimentos', busca, paginacao],
     queryFn: () => AtendimentosService.buscarAtendimentos(
-      { ...filtros, busca },
+      { busca },
       paginacao
     ),
   });
 
   const getStatusColor = (status: string) => {
     const colors = {
-      'Pendente': 'bg-yellow-100 text-yellow-800',
-      'Em Andamento': 'bg-blue-100 text-blue-800',
-      'Concluído': 'bg-green-100 text-green-800',
-      'Cancelado': 'bg-red-100 text-red-800',
+      'Pendente': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'Em Andamento': 'bg-blue-100 text-blue-800 border-blue-200',
+      'Concluído': 'bg-green-100 text-green-800 border-green-200',
+      'Cancelado': 'bg-red-100 text-red-800 border-red-200',
     };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const getUrgenciaIcon = (urgencia: string) => {
+    if (urgencia === 'Urgente' || urgencia === 'Alta') {
+      return <AlertCircle className="w-4 h-4 text-red-500" />;
+    }
+    return <Clock className="w-4 h-4 text-gray-400" />;
   };
 
   const getUrgenciaColor = (urgencia: string) => {
     const colors = {
-      'Baixa': 'bg-gray-100 text-gray-800',
-      'Média': 'bg-yellow-100 text-yellow-800',
-      'Alta': 'bg-orange-100 text-orange-800',
-      'Urgente': 'bg-red-100 text-red-800',
+      'Baixa': 'text-gray-600',
+      'Média': 'text-yellow-600',
+      'Alta': 'text-orange-600',
+      'Urgente': 'text-red-600 font-semibold',
     };
-    return colors[urgencia as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[urgencia as keyof typeof colors] || 'text-gray-600';
   };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+  <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 pb-24 safe-area-bottom">
+        {/* Header com Search */}
+        <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800 px-4 py-4 space-y-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Atendimentos</h1>
-            <p className="text-gray-600">Gerencie todos os atendimentos e demandas</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Atendimentos</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Gerencie suas demandas</p>
           </div>
-          
-          <div className="mt-4 sm:mt-0">
-            <Link
-              href="/atendimentos/novo"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Atendimento
-            </Link>
+
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar por nome ou solicitação..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-neutral-700 rounded-xl bg-gray-50 dark:bg-neutral-800 text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all mobile-input"
+            />
           </div>
         </div>
 
-        {/* Filters and Search */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Buscar por nome ou solicitação..."
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-            </div>
-            
-            <button
-              type="button"
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </button>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
+        {/* Cards List */}
+        <div className="px-4 py-4">
           {isLoading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-500">Carregando atendimentos...</p>
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white dark:bg-neutral-800 rounded-xl p-4 animate-pulse border border-gray-100 dark:border-neutral-700">
+                  <div className="h-6 bg-gray-200 dark:bg-neutral-700 rounded w-3/4 mb-3"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          ) : atendimentos?.data.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 dark:text-gray-300 text-lg font-medium">Nenhum atendimento encontrado</p>
+              <p className="text-gray-400 dark:text-gray-400 text-sm mt-1">Tente ajustar sua busca</p>
             </div>
           ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Atendimento
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Urgência
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Canal
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Data
-                      </th>
-                      <th className="relative px-6 py-3">
-                        <span className="sr-only">Ações</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {atendimentos?.data.map((atendimento) => (
-                      <tr key={atendimento.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <div className="text-sm font-medium text-gray-900">
-                              {atendimento.nome}
-                            </div>
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
-                              {atendimento.solicitacao}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(atendimento.status)}`}>
-                            {atendimento.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getUrgenciaColor(atendimento.prazo_urgencia)}`}>
-                            {atendimento.prazo_urgencia}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {atendimento.canal}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(atendimento.data_criacao).toLocaleDateString('pt-BR')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <Link
-                            href={`/atendimentos/${atendimento.id}`}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Ver detalhes
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <AnimatePresence mode="popLayout">
+              <div className="space-y-3">
+                {atendimentos?.data.map((atendimento, index) => (
+                  <motion.div
+                    key={atendimento.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: index * 0.05, duration: 0.2 }}
+                    onClick={() => router.push(`/atendimentos/${atendimento.id}`)}
+                    className="bg-white dark:bg-neutral-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-neutral-700 active:scale-98 transition-all duration-200 cursor-pointer hover:shadow-md"
+                    role="button"
+                    aria-label={`Ver detalhes do atendimento de ${atendimento.nome}`}
+                  >
+                    {/* Header do Card */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {atendimento.nome}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mt-1">
+                          {atendimento.solicitacao}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
+                    </div>
 
-              {/* Pagination */}
-              <div className="bg-white px-6 py-3 flex items-center justify-between border-t border-gray-200">
-                <div className="flex-1 flex justify-between sm:hidden">
-                  <button
-                    disabled={paginacao.page <= 1}
-                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Anterior
-                  </button>
-                  <button
-                    disabled={!atendimentos || paginacao.page >= atendimentos.totalPages}
-                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Próximo
-                  </button>
-                </div>
-                
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Mostrando{' '}
-                      <span className="font-medium">
-                        {((paginacao.page - 1) * paginacao.limit) + 1}
-                      </span>{' '}
-                      até{' '}
-                      <span className="font-medium">
-                        {Math.min(paginacao.page * paginacao.limit, atendimentos?.total || 0)}
-                      </span>{' '}
-                      de{' '}
-                      <span className="font-medium">{atendimentos?.total || 0}</span>{' '}
-                      resultados
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                      <button
-                        onClick={() => setPaginacao(prev => ({ ...prev, page: prev.page - 1 }))}
-                        disabled={paginacao.page <= 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        Anterior
-                      </button>
-                      <button
-                        onClick={() => setPaginacao(prev => ({ ...prev, page: prev.page + 1 }))}
-                        disabled={!atendimentos || paginacao.page >= atendimentos.totalPages}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        Próximo
-                      </button>
-                    </nav>
-                  </div>
-                </div>
+                    {/* Badges e Info */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(atendimento.status)}`}>
+                        {atendimento.status}
+                      </span>
+
+                      {atendimento.prazo_urgencia && (
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-50 dark:bg-neutral-700/40 ${getUrgenciaColor(atendimento.prazo_urgencia)}`}>
+                          {getUrgenciaIcon(atendimento.prazo_urgencia)}
+                          {atendimento.prazo_urgencia}
+                        </span>
+                      )}
+
+                      {atendimento.canal && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-neutral-700/40 text-gray-700 dark:text-gray-200">
+                          {atendimento.canal}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Data */}
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <Calendar className="w-4 h-4" />
+                      <span>
+                        {new Date(atendimento.data_criacao).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-            </>
+            </AnimatePresence>
+          )}
+
+          {/* Pagination */}
+          {atendimentos && atendimentos.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <button
+                onClick={() => setPaginacao(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                disabled={paginacao.page === 1}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Anterior
+              </button>
+
+              <span className="text-sm text-gray-600">
+                Página {paginacao.page} de {atendimentos.totalPages}
+              </span>
+
+              <button
+                onClick={() => setPaginacao(prev => ({ ...prev, page: Math.min(atendimentos.totalPages, prev.page + 1) }))}
+                disabled={paginacao.page === atendimentos.totalPages}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Próxima
+              </button>
+            </div>
           )}
         </div>
+
+        {/* Floating Action Button (FAB) */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.3, type: 'spring', stiffness: 260, damping: 20 }}
+          className="fixed bottom-20 right-4 z-20 md:bottom-6 md:right-6"
+        >
+          <button
+            onClick={() => router.push('/atendimentos/novo')}
+            className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-4 rounded-full shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 mobile-button"
+            aria-label="Novo atendimento"
+          >
+            <Plus className="w-6 h-6" />
+            <span className="font-semibold hidden sm:inline">Novo</span>
+          </button>
+        </motion.div>
       </div>
     </DashboardLayout>
   );

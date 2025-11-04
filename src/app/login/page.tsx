@@ -19,6 +19,16 @@ export default function LoginPage() {
     // Pegar URL de redirecionamento dos parâmetros
     const redirectTo = searchParams.get('redirectTo') || '/';
 
+    const waitForSession = async (timeoutMs = 2000, intervalMs = 100) => {
+        const start = Date.now();
+        while (Date.now() - start < timeoutMs) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) return session;
+            await new Promise((r) => setTimeout(r, intervalMs));
+        }
+        return null;
+    };
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -41,27 +51,13 @@ export default function LoginPage() {
                 console.log('✅ Login bem-sucedido!', { user: data.user, session: data.session });
                 setError('Login realizado com sucesso! Redirecionando...');
 
-                // Aguardar um pouco para garantir que os cookies sejam definidos
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Garantir que a sessão está estável antes de redirecionar
+                await waitForSession(2000, 100);
 
-                // Forçar reload da página para garantir que o middleware detecte a autenticação
+                // Redirecionar substituindo o histórico (evita voltar para a tela de login)
                 console.log('🔄 Redirecionando para:', redirectTo);
-
                 if (typeof window !== 'undefined') {
-                    // Em desenvolvimento, usar window.location.href
-                    if (process.env.NODE_ENV === 'development') {
-                        window.location.href = redirectTo;
-                    } else {
-                        // Em produção, usar router.push primeiro, fallback para window.location
-                        try {
-                            router.push(redirectTo);
-                            setTimeout(() => {
-                                window.location.href = redirectTo;
-                            }, 100);
-                        } catch {
-                            window.location.href = redirectTo;
-                        }
-                    }
+                    window.location.replace(redirectTo);
                 }
             }
         } catch (err) {
@@ -72,34 +68,7 @@ export default function LoginPage() {
         }
     };
 
-    const handleSignUp = async () => {
-        setLoading(true);
-        setError('');
-
-        try {
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-            });
-
-            if (error) {
-                setError(error.message);
-            } else if (data.user) {
-                // Se confirmação de email estiver desabilitada, redirecionar
-                if (data.session) {
-                    setTimeout(() => {
-                        window.location.href = redirectTo;
-                    }, 100);
-                } else {
-                    setError('Verifique seu email para confirmar a conta.');
-                }
-            }
-        } catch (err) {
-            setError('Erro inesperado. Tente novamente.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Note: criação de conta removida - convites de usuários devem ser gerenciados via área de configurações
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -109,7 +78,7 @@ export default function LoginPage() {
                         Sistema de Assessoria Parlamentar
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-600">
-                        Entre com sua conta ou crie uma nova
+                        Entre com sua conta
                     </p>
                 </div>
 
@@ -156,16 +125,6 @@ export default function LoginPage() {
                                 disabled={loading}
                             >
                                 {loading ? 'Entrando...' : 'Entrar'}
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full"
-                                disabled={loading}
-                                onClick={handleSignUp}
-                            >
-                                {loading ? 'Criando...' : 'Criar Conta'}
                             </Button>
                         </div>
                     </form>
