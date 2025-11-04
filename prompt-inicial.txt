@@ -1,0 +1,292 @@
+PROMPT COMPLETO — para GitHub Copilot no VSCode
+
+Instrução: Gere todo o projeto web (do zero) conforme as especificações abaixo, usando o repositório base https://github.com/caio7siqueira/app-acessoria-parlamentar.
+O Copilot deve criar todas as pastas, dependências, scripts, banco (Supabase), lógica, componentes e documentação conforme melhores práticas, priorizando performance, UX mobile-first e baixo custo.
+O deploy será feito na Vercel e o armazenamento/identidade no Supabase.
+O app deve ser um PWA responsivo, 100% funcional em iPhone/iPad via navegador Safari.
+
+🔧 1. STACK E CONFIGURAÇÕES BASE
+
+Frontend: Next.js (App Router) + TypeScript
+
+UI: Tailwind CSS + shadcn/ui + Lucide Icons
+
+Auth & DB: Supabase (Postgres + Supabase Auth)
+
+State/Data: React Query (TanStack Query)
+
+Charts: Recharts
+
+PDF/Excel export: pdfkit + exceljs
+
+Notifications: Supabase Realtime + Web Push (VAPID + browser API)
+
+Infra:
+
+Deploy automático no Vercel
+
+Banco Supabase (schema SQL + seeds automáticos)
+
+.env.example com todas variáveis de ambiente
+
+CI/CD: GitHub Actions (lint, test, build, deploy)
+
+Testes: Jest + React Testing Library + Playwright
+
+Código: Eslint + Prettier + Husky (pre-commit hook)
+
+📁 2. ESTRUTURA DE PASTAS
+
+O Copilot deve criar a seguinte estrutura (e preencher os arquivos principais):
+
+/
+├─ apps/web/
+│  ├─ public/
+│  │  ├─ icons/
+│  │  └─ manifest.json     # PWA config
+│  ├─ src/
+│  │  ├─ app/
+│  │  │  ├─ layout.tsx
+│  │  │  ├─ page.tsx (Dashboard principal)
+│  │  │  ├─ atendimentos/
+│  │  │  │  ├─ page.tsx
+│  │  │  │  ├─ novo/
+│  │  │  │  │  └─ page.tsx
+│  │  │  │  └─ [id]/
+│  │  │  │     └─ page.tsx
+│  │  │  ├─ contatos/
+│  │  │  ├─ relatorios/
+│  │  │  └─ configuracoes/
+│  │  ├─ components/
+│  │  │  ├─ ui/
+│  │  │  ├─ forms/
+│  │  │  ├─ charts/
+│  │  │  └─ layout/
+│  │  ├─ services/
+│  │  │  ├─ supabaseClient.ts
+│  │  │  ├─ atendimentosService.ts
+│  │  │  ├─ contatosService.ts
+│  │  │  ├─ relatoriosService.ts
+│  │  │  └─ notificacoesService.ts
+│  │  ├─ hooks/
+│  │  ├─ lib/
+│  │  ├─ utils/
+│  │  ├─ styles/
+│  │  └─ tests/
+├─ infra/
+│  ├─ supabase/
+│  │  ├─ migrations/
+│  │  │  └─ 001_init.sql
+│  │  └─ seeds/
+│  │     └─ demo_data.sql
+├─ .github/workflows/
+│  └─ ci.yml
+├─ docs/
+│  ├─ README.md
+│  ├─ DEPLOY.md
+│  └─ SUPABASE-SETUP.md
+├─ .env.example
+├─ package.json
+└─ tsconfig.json
+
+🧩 3. FUNCIONALIDADES PRINCIPAIS (QUE DEVEM SER IMPLEMENTADAS)
+3.1 Atendimentos
+
+CRUD completo (criar, listar, editar, excluir)
+
+Campos obrigatórios conforme escopo (nome, gênero, endereço, telefone, etc.)
+
+Máscara para telefone e data
+
+Selects dinâmicos (secretaria condicionada a “encaminhamento = Secretaria”)
+
+Filtros avançados: status, urgência, secretaria, canal, período, busca por nome
+
+Histórico automático de alterações
+
+Gráficos: atendimentos por canal, secretaria, status e urgência
+
+Paginação, ordenação e loading skeletons
+
+3.2 Lembretes & Notificações
+
+Backend job (API route /api/notifications/check) que roda via CRON (Vercel Scheduler)
+
+Detecta prazos vencidos ou urgentes e dispara Web Push
+
+Configurações por usuário (horário e tipo de notificação)
+
+3.3 Agenda de Contatos
+
+CRUD de contatos das secretarias
+
+Busca e filtro por nome
+
+Ações rápidas (copiar número, abrir WhatsApp)
+
+3.4 Relatórios
+
+Gerar relatórios:
+
+Por período, secretaria, encaminhamento e urgência
+
+Exportar PDF e Excel (download direto via API)
+
+Layout de PDF padronizado com logotipo, cabeçalho e tabela
+
+3.5 Dashboard
+
+Cards: total atendimentos, urgentes, próximos do prazo
+
+Gráficos (barras e pizza)
+
+Responsivo (breakpoints Tailwind)
+
+Atualização em tempo real via Supabase Realtime
+
+3.6 Autenticação e segurança
+
+Login (email/senha) com Supabase Auth
+
+Controle de sessão persistente
+
+Logout e expiração de sessão inativa
+
+Proteção de rotas (middleware no Next.js)
+
+Somente usuários ativos podem acessar
+
+🗃️ 4. SCHEMA SQL (para gerar infra/supabase/migrations/001_init.sql)
+CREATE TABLE usuarios (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  role TEXT DEFAULT 'assessora',
+  ativo BOOLEAN DEFAULT TRUE,
+  criado_em TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE atendimentos (
+  id BIGSERIAL PRIMARY KEY,
+  nome TEXT NOT NULL,
+  genero TEXT NOT NULL,
+  endereco TEXT NOT NULL,
+  idade INT,
+  telefone TEXT,
+  solicitacao TEXT NOT NULL,
+  prazo_data DATE,
+  prazo_urgencia TEXT NOT NULL,
+  encaminhamento TEXT NOT NULL,
+  secretaria TEXT,
+  status TEXT DEFAULT 'Pendente',
+  canal TEXT NOT NULL,
+  usuario_criacao UUID REFERENCES usuarios(id),
+  data_criacao TIMESTAMPTZ DEFAULT now(),
+  data_atualizacao TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE historico (
+  id BIGSERIAL PRIMARY KEY,
+  id_atendimento BIGINT REFERENCES atendimentos(id) ON DELETE CASCADE,
+  usuario UUID REFERENCES usuarios(id),
+  campo_alterado TEXT,
+  valor_anterior TEXT,
+  valor_novo TEXT,
+  data_hora TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE contatos (
+  id BIGSERIAL PRIMARY KEY,
+  secretaria TEXT NOT NULL,
+  nome_responsavel TEXT NOT NULL,
+  cargo TEXT,
+  telefone1 TEXT,
+  telefone2 TEXT,
+  email TEXT,
+  observacoes TEXT
+);
+
+
+Criar triggers para atualizar data_atualizacao e registrar automaticamente histórico de mudanças (via função PL/pgSQL).
+
+🌐 5. REQUISITOS DE UX/UI
+
+Layout minimalista, profissional e rápido (Tailwind + shadcn/ui)
+
+Tema claro com tons azul/cinza/branco
+
+Navbar fixa + menu lateral colapsável
+
+Design mobile-first
+
+Inputs grandes e legíveis no iPhone
+
+Botões de ação sempre acessíveis (inferior no mobile)
+
+Feedback visual em todas ações (toast, spinner, skeleton)
+
+PWA completo (manifest + service worker + add-to-home-screen)
+
+🚀 6. DEPLOY E CONFIGURAÇÃO AUTOMÁTICA
+
+O Copilot deve gerar:
+
+docs/SUPABASE-SETUP.md: instruções para criar projeto, configurar .env, importar SQL.
+
+docs/DEPLOY.md: deploy no Vercel, incluindo variáveis e cron job.
+
+scripts/seed.ts: insere dados de exemplo no Supabase.
+
+scripts/exportPdf.ts e scripts/exportExcel.ts: geração de relatórios.
+
+✅ 7. TESTES E QUALIDADE
+
+Testes unitários para services e hooks
+
+Testes e2e básicos de login e CRUD (Playwright)
+
+Lint e Type Check obrigatórios em CI
+
+Commits seguindo Conventional Commits
+
+CI/CD (GitHub Actions) executando:
+
+npm run lint
+
+npm run test
+
+npm run build
+
+Deploy na Vercel após sucesso
+
+⚙️ 8. ENTREGÁVEIS FINAIS (que o Copilot deve gerar)
+
+Estrutura completa do projeto conforme acima
+
+Código funcional do app (Next.js + Supabase + Tailwind)
+
+Arquivo SQL inicial de migração (infra/supabase/migrations/001_init.sql)
+
+Documentações (README.md, DEPLOY.md, SUPABASE-SETUP.md)
+
+Scripts automáticos (seed, lint, test, export, deploy)
+
+Configuração de CI/CD e Husky
+
+PWA configurado e validado para iOS (Safari)
+
+🧭 9. TOM E ESTILO DO CÓDIGO
+
+Comentários explicativos em português claro
+
+Nomes de variáveis e funções em inglês
+
+Funções e componentes curtos e coesos
+
+Código limpo, modular e escalável
+
+Aplicar boas práticas de performance (memoização, suspense, lazy load)
+
+💬 10. AÇÃO FINAL
+
+Gere automaticamente todos os arquivos, scripts e documentação acima, populando o repositório app-acessoria-parlamentar com a estrutura e código funcional do sistema completo, pronto para deploy na Vercel.
