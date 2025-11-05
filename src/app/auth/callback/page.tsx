@@ -9,26 +9,25 @@ export default function AuthCallback() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const type = searchParams?.get('type');
-    const token = searchParams?.get('token_hash') || searchParams?.get('token');
+    // Verificar se a URL contém parâmetros de hash (access_token, etc)
+    const hash = window.location.hash;
+    const urlParams = new URLSearchParams(window.location.search);
+    const type = urlParams.get('type');
     
     // Debug: Log todos os parâmetros recebidos
     console.log('🔍 Auth Callback Debug:', {
       type,
-      token,
-      allParams: Object.fromEntries(searchParams?.entries() || []),
+      hash,
+      search: window.location.search,
+      allParams: Object.fromEntries(urlParams.entries()),
       url: window.location.href
     });
     
-    // Se for um convite, redirecionar para página de definir senha
-    if (type === 'invite') {
-      if (token) {
-        console.log('✅ Redirecionando para definir senha com token');
-        router.push(`/definir-senha?token=${token}&type=invite`);
-      } else {
-        console.log('⚠️ Convite sem token, redirecionando para definir senha sem token');
-        router.push(`/definir-senha?type=invite`);
-      }
+    // Se for um convite (vem na URL ou no hash), SEMPRE redirecionar para definir senha
+    if (type === 'invite' || hash.includes('type=invite')) {
+      console.log('✅ Convite detectado - redirecionando para definir senha');
+      // Usar replace para não manter no histórico
+      router.replace('/definir-senha?type=invite');
       return;
     }
     
@@ -42,7 +41,7 @@ export default function AuthCallback() {
     // Fallback padrão
     console.log('🏠 Fallback, redirecionando para login');
     router.push('/login');
-  }, [router, searchParams]);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-neutral-900 dark:to-neutral-800">

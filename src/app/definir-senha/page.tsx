@@ -76,19 +76,24 @@ export default function DefinirSenhaPage() {
     try {
       const supabase = getSupabaseClient();
       
+      console.log('🔧 Atualizando senha do usuário via convite');
+      
       // Atualizar senha do usuário
       const { error } = await supabase.auth.updateUser({
         password: senha,
       });
       
       if (error) {
+        console.error('❌ Erro ao atualizar senha:', error);
         throw error;
       }
       
+      console.log('✅ Senha definida com sucesso');
       showToast(MESSAGES.INFO.PASSWORD_CREATED, 'success');
       
       // Redirecionar para dashboard após 2 segundos
       setTimeout(() => {
+        console.log('🔄 Redirecionando para dashboard');
         router.push('/atendimentos');
       }, 2000);
       
