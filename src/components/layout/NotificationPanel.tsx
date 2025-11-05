@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Bell, X, Clock, AlertCircle } from 'lucide-react'
 import { getSupabaseClient } from '@/services/supabaseClient'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/database'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 interface Notification {
     id: string
@@ -15,128 +14,138 @@ interface Notification {
     tipo: 'urgente' | 'prazo' | 'info'
     lida: boolean
     created_at: string
-    atendimento_id?: number
+    atendimento_id?: number | null
 }
 
 export default function NotificationPanel() {
     const [isOpen, setIsOpen] = useState(false)
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
-    
-    // Usar ref para evitar recriar cliente em cada render
-    const supabaseRef = useRef<SupabaseClient<Database>>(getSupabaseClient())
-    const channelRef = useRef<RealtimeChannel | null>(null)
 
-    // Memoizar loadNotifications para evitar recriações
+    // Cliente Supabase único (singleton fora do componente)
+    const supabase = getSupabaseClient()
+
+    // Função para carregar notificações
     const loadNotifications = useCallback(async () => {
         try {
-            const { data, error } = await supabaseRef.current
+            const { data, error } = await supabase
                 .from('notificacoes')
                 .select('*')
                 .order('created_at', { ascending: false })
                 .limit(10)
 
             if (error) {
-                console.error('Erro ao carregar notificações:', error)
+                console.error('❌ Erro ao carregar notificações:', error.message)
                 return
             }
 
-            if (data) {
-                setNotifications(data as Notification[])
-                setUnreadCount(data.filter((n: Notification) => !n.lida).length)
-            }
+            // Garantir que data não é null antes de processar
+            const notificationsList = (data ?? []) as Notification[]
+            setNotifications(notificationsList)
+            setUnreadCount(notificationsList.filter((n) => !n.lida).length)
         } catch (err) {
-            console.warn('Erro carregando notificações', err)
+            console.error('❌ Exceção ao carregar notificações:', err)
         }
-    }, [])
+    }, [supabase])
 
+    // Configurar Realtime subscription
     useEffect(() => {
         // Carregar notificações iniciais
         loadNotifications()
 
-        // Criar canal único com ID específico para evitar duplicatas
-        const channelId = `notifications-${Date.now()}`
-        
-        const channel = supabaseRef.current
-            .channel(channelId)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'notificacoes'
-                },
-                (payload) => {
-                    console.log('Notificação em tempo real:', payload)
-                    loadNotifications()
-                }
-            )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('✅ Inscrito no canal de notificações')
-                }
-            })
+        // Criar canal único para evitar duplicatas
+        let channel: RealtimeChannel | null = null
 
-        channelRef.current = channel
+        const setupRealtimeSubscription = async () => {
+            channel = supabase
+                .channel(`notifications-${crypto.randomUUID()}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'notificacoes'
+                    },
+                    (payload) => {
+                        console.log('📬 Notificação em tempo real:', payload.eventType)
+                        loadNotifications()
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('✅ Inscrito no canal de notificações')
+                    } else if (status === 'CHANNEL_ERROR') {
+                        console.error('❌ Erro no canal de notificações')
+                    }
+                })
+        }
 
-        // Cleanup adequado usando unsubscribe do Realtime v2
+        setupRealtimeSubscription()
+
+        // Cleanup: remover canal ao desmontar
         return () => {
-            if (channelRef.current) {
-                supabaseRef.current.removeChannel(channelRef.current)
-                channelRef.current = null
+            if (channel) {
+                supabase.removeChannel(channel)
+                console.log('🧹 Canal de notificações removido')
             }
         }
-    }, [loadNotifications])
+    }, [supabase, loadNotifications])
 
+    // Marcar notificação como lida
     const markAsRead = useCallback(async (id: string) => {
         try {
-            // @ts-ignore - TypeScript não infere corretamente Database.Update['notificacoes']
-            const { error } = await supabaseRef.current
-                .from('notificacoes')
-                .update({ lida: true })
-                .eq('id', id)
-
-            if (error) {
-                console.error('Erro ao marcar como lida:', error)
-                return
-            }
-
-            // Atualizar estado local imediatamente (otimistic update)
+            // Otimistic update
             setNotifications(prev => 
                 prev.map(n => n.id === id ? { ...n, lida: true } : n)
             )
             setUnreadCount(prev => Math.max(0, prev - 1))
 
-            // Recarregar para garantir sincronização
-            await loadNotifications()
-        } catch (err) {
-            console.error('Erro ao atualizar notificação:', err)
-        }
-    }, [loadNotifications])
+            // Atualizar no banco (cast para evitar erro de tipagem)
+            const { error } = await (supabase
+                .from('notificacoes') as any)
+                .update({ lida: true })
+                .eq('id', id)
 
+            if (error) {
+                console.error('❌ Erro ao marcar como lida:', error.message)
+                // Reverter otimistic update em caso de erro
+                loadNotifications()
+                return
+            }
+        } catch (err) {
+            console.error('❌ Exceção ao marcar como lida:', err)
+            loadNotifications()
+        }
+    }, [supabase, loadNotifications])
+
+    // Marcar todas como lidas
     const markAllAsRead = useCallback(async () => {
         try {
-            // @ts-ignore - TypeScript não infere corretamente Database.Update['notificacoes']
-            const { error } = await supabaseRef.current
-                .from('notificacoes')
+            // Otimistic update
+            const prevNotifications = notifications
+            const prevUnreadCount = unreadCount
+            
+            setNotifications(prev => prev.map(n => ({ ...n, lida: true })))
+            setUnreadCount(0)
+
+            // Atualizar no banco (cast para evitar erro de tipagem)
+            const { error } = await (supabase
+                .from('notificacoes') as any)
                 .update({ lida: true })
                 .eq('lida', false)
 
             if (error) {
-                console.error('Erro ao marcar todas como lidas:', error)
+                console.error('❌ Erro ao marcar todas como lidas:', error.message)
+                // Reverter otimistic update em caso de erro
+                setNotifications(prevNotifications)
+                setUnreadCount(prevUnreadCount)
                 return
             }
-
-            // Atualizar estado local
-            setNotifications(prev => prev.map(n => ({ ...n, lida: true })))
-            setUnreadCount(0)
-
-            // Recarregar para garantir sincronização
-            await loadNotifications()
         } catch (err) {
-            console.error('Erro ao marcar todas como lidas:', err)
+            console.error('❌ Exceção ao marcar todas como lidas:', err)
+            loadNotifications()
         }
-    }, [loadNotifications])
+    }, [supabase, notifications, unreadCount, loadNotifications])
 
     const getIcon = (tipo: string) => {
         switch (tipo) {
@@ -150,19 +159,21 @@ export default function NotificationPanel() {
     }
 
     return (
-        <div className="relative">
-            <button 
-                onClick={() => setIsOpen(!isOpen)} 
-                className="relative p-2 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
-                aria-label="Notificações"
-            >
-                <Bell size={24} className="text-gray-700 dark:text-gray-300" />
-                {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                        {unreadCount}
-                    </span>
-                )}
-            </button>
+        <>
+            <div className="relative">
+                <button 
+                    onClick={() => setIsOpen(!isOpen)} 
+                    className="relative p-2 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                    aria-label="Notificações"
+                >
+                    <Bell size={24} className="text-gray-700 dark:text-gray-300" />
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                            {unreadCount}
+                        </span>
+                    )}
+                </button>
+            </div>
 
             {isOpen && (
                 <>
@@ -225,6 +236,7 @@ export default function NotificationPanel() {
                     </div>
                 </>
             )}
-        </div>
+        </>
     )
 }
+

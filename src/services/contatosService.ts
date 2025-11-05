@@ -1,24 +1,24 @@
-import { createClient } from '@supabase/supabase-js';
 import type { Contato, ContatoForm } from '@/types';
+import { getSupabaseClient } from '@/services/supabaseClient';
 
-// Usar cliente sem tipagem estrita para evitar conflitos
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = getSupabaseClient() as any;
 
 export class ContatosService {
   // Buscar todos os contatos
-  static async buscarTodos(filtro?: string): Promise<Contato[]> {
+  static async buscarTodos(filtro?: string, secretaria?: string): Promise<Contato[]> {
     let query = supabase
       .from('contatos')
       .select('*')
-      .order('secretaria', { ascending: true });
+      .order('nome', { ascending: true });
 
     if (filtro) {
       query = query.or(
-        `secretaria.ilike.%${filtro}%,nome_responsavel.ilike.%${filtro}%`
+        `nome.ilike.%${filtro}%,email.ilike.%${filtro}%,cidade.ilike.%${filtro}%`
       );
+    }
+
+    if (secretaria) {
+      query = query.eq('secretaria', secretaria);
     }
 
     const { data, error } = await query;
@@ -54,7 +54,7 @@ export class ContatosService {
       .from('contatos')
       .select('*')
       .eq('secretaria', secretaria)
-      .order('nome_responsavel', { ascending: true });
+      .order('nome', { ascending: true });
 
     if (error) {
       throw new Error(`Erro ao buscar contatos da secretaria: ${error.message}`);
@@ -111,13 +111,13 @@ export class ContatosService {
     const { data, error } = await supabase
       .from('contatos')
       .select('secretaria')
+      .not('secretaria', 'is', null)
       .order('secretaria', { ascending: true });
 
     if (error) {
       throw new Error(`Erro ao buscar secretarias: ${error.message}`);
     }
 
-    // Remover duplicatas
     const secretariasUnicas = [...new Set((data as any)?.map((item: any) => item.secretaria) || [])] as string[];
     return secretariasUnicas;
   }

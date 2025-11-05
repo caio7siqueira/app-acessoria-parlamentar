@@ -4,7 +4,7 @@
   "description": "Sistema de assessoria parlamentar com Next.js, TypeScript e Supabase",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000 -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

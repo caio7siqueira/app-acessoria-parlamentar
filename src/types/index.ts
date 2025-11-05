@@ -39,14 +39,22 @@ export interface Historico {
 }
 
 export interface Contato {
-  id: number;
-  secretaria: string;
-  nome_responsavel: string;
-  cargo?: string;
-  telefone1?: string;
-  telefone2?: string;
+  id: string; // UUID
+  user_id: string; // UUID do usuário dono
+  nome: string;
+  telefone: string;
   email?: string;
+  secretaria?: string;
+  cep?: string;
+  rua?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  uf?: string;
   observacoes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Tipos para formulários
@@ -66,12 +74,17 @@ export interface AtendimentoForm {
 }
 
 export interface ContatoForm {
-  secretaria: string;
-  nome_responsavel: string;
-  cargo?: string;
-  telefone1?: string;
-  telefone2?: string;
+  nome: string;
+  telefone: string;
   email?: string;
+  secretaria?: string;
+  cep?: string;
+  rua?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  uf?: string;
   observacoes?: string;
 }
 

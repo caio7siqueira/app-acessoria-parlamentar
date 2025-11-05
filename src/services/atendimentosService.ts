@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '@/services/supabaseClient';
 import type {
   Atendimento,
   AtendimentoForm,
@@ -8,11 +8,8 @@ import type {
   DashboardStats
 } from '@/types';
 
-// Usar cliente sem tipagem estrita para evitar conflitos
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Usar cliente singleton para evitar múltiplas instâncias
+const supabase = getSupabaseClient() as any;
 
 export class AtendimentosService {
   // Buscar atendimentos com filtros e paginação
@@ -138,8 +135,16 @@ export class AtendimentosService {
 
   // Atualizar atendimento
   static async atualizar(id: number, atendimento: Partial<AtendimentoForm>): Promise<Atendimento> {
-    // Remover campos que não devem ser atualizados
-    const { ...dadosAtualizacao } = atendimento;
+    // Remover campos readonly que NÃO DEVEM ser atualizados
+    const {
+      // @ts-ignore - Remover campos que não existem em AtendimentoForm mas podem vir do objeto
+      id: _id,
+      usuario_criacao: _usuario_criacao,
+      data_criacao: _data_criacao,
+      data_atualizacao: _data_atualizacao,
+      usuario: _usuario, // ❌ ESTE É O CAMPO QUE CAUSA O ERRO!
+      ...dadosAtualizacao
+    } = atendimento as any;
     
     // Limpar campos undefined para evitar erros de tipo
     const dadosLimpos = Object.fromEntries(

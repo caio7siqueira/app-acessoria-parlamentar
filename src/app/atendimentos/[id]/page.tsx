@@ -41,8 +41,37 @@ export default function AtendimentoDetalhePage() {
 
   useEffect(() => {
     if (atendimento) {
-      const { nome, genero, endereco, idade, telefone, solicitacao, prazo_data, prazo_urgencia, encaminhamento, secretaria, status, canal } = atendimento as any;
-      setForm({ nome, genero, endereco, idade, telefone, solicitacao, prazo_data, prazo_urgencia, encaminhamento, secretaria, status, canal });
+      // Extrair APENAS os campos editáveis (AtendimentoForm)
+      // Não incluir: id, usuario_criacao, data_criacao, data_atualizacao
+      const { 
+        nome, 
+        genero, 
+        endereco, 
+        idade, 
+        telefone, 
+        solicitacao, 
+        prazo_data, 
+        prazo_urgencia, 
+        encaminhamento, 
+        secretaria, 
+        status, 
+        canal 
+      } = atendimento;
+      
+      setForm({ 
+        nome, 
+        genero, 
+        endereco, 
+        idade, 
+        telefone, 
+        solicitacao, 
+        prazo_data, 
+        prazo_urgencia, 
+        encaminhamento, 
+        secretaria, 
+        status, 
+        canal 
+      });
     }
   }, [atendimento]);
 

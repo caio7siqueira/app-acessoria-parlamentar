@@ -7,8 +7,9 @@ import { ContatosService } from "@/services/contatosService";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Combobox } from "@/components/ui/combobox";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useDebounce } from "@/hooks/useDebounce";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Phone, Mail, Building2, User, RefreshCcw, Plus, Edit, Trash2, Download, Loader2 } from "lucide-react";
+import { Search, Phone, Mail, Building2, User, RefreshCcw, Plus, Edit, Trash2, Download, Loader2, X, Filter } from "lucide-react";
 import { ContatoModal } from "@/components/contatos/ContatoModal";
 import { useToast } from "@/components/ui/toast";
 import { MESSAGES } from "@/utils/messages";
@@ -28,19 +29,29 @@ export default function ContatosPage() {
   const [contatoSelecionado, setContatoSelecionado] = useState<any>(null);
   const [contatoParaDeletar, setContatoParaDeletar] = useState<any>(null);
 
+  // Debounce da busca para evitar requisições excessivas
+  const buscaDebounced = useDebounce(busca, 400);
+
   const { data: secretarias } = useQuery({
     queryKey: ["contatos", "secretarias"],
     queryFn: () => ContatosService.obterSecretarias(),
   });
 
   const { data: contatos, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["contatos", busca, secretariaFiltro],
+    queryKey: ["contatos", buscaDebounced, secretariaFiltro],
     queryFn: async () => {
       const supabase = getSupabaseClient();
-      let query = supabase.from('contatos').select('*').order('nome', { ascending: true });
+      let query = supabase
+        .from('contatos')
+        .select('id, nome, telefone, email, secretaria, cep, rua, numero, complemento, bairro, cidade, uf, observacoes')
+        .order('nome', { ascending: true });
       
-      if (busca) {
-        query = query.or(`nome.ilike.%${busca}%,telefone.ilike.%${busca}%,email.ilike.%${busca}%`);
+      if (buscaDebounced) {
+        query = query.or(`nome.ilike.%${buscaDebounced}%,telefone.ilike.%${buscaDebounced}%,email.ilike.%${buscaDebounced}%`);
+      }
+
+      if (secretariaFiltro) {
+        query = query.eq('secretaria', secretariaFiltro);
       }
       
       const { data, error } = await query;
@@ -111,6 +122,13 @@ export default function ContatosPage() {
       showToast(error.message || MESSAGES.ERROR.GENERIC, 'error');
     },
   });
+
+  const limparFiltros = () => {
+    setBusca('');
+    setSecretariaFiltro('');
+  };
+
+  const temFiltrosAtivos = busca || secretariaFiltro;
 
   const handleSaveContato = async (contato: any) => {
     if (modalMode === 'create') {
@@ -196,16 +214,84 @@ export default function ContatosPage() {
             </button>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar contato..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-neutral-700 rounded-xl bg-gray-50 dark:bg-neutral-800 text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all mobile-input"
-            />
+          {/* Search + Secretaria Filter */}
+          <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nome, telefone ou e-mail..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-neutral-700 rounded-xl bg-gray-50 dark:bg-neutral-800 text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all mobile-input"
+                  aria-label="Buscar contatos"
+                />
+                {busca && (
+                  <button
+                    onClick={() => setBusca('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded transition-colors"
+                    aria-label="Limpar busca"
+                  >
+                    <X className="w-4 h-4 text-gray-400" />
+                  </button>
+                )}
+              </div>
+              <div>
+                <Combobox
+                  value={secretariaFiltro || undefined}
+                  onChange={(v) => setSecretariaFiltro(v ?? '')}
+                  placeholder="Filtrar por secretaria"
+                  items={(secretarias || []).map((s) => ({ label: s, value: s }))}
+                  ariaLabel="Filtrar por secretaria"
+                />
+              </div>
+            </div>
+
+            {/* Indicador de filtros ativos */}
+            {temFiltrosAtivos && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-center gap-2 flex-wrap"
+              >
+                <span className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  <Filter className="w-3 h-3" />
+                  Filtros ativos:
+                </span>
+                {busca && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                    Busca: "{busca}"
+                    <button
+                      onClick={() => setBusca('')}
+                      className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded p-0.5"
+                      aria-label="Remover filtro de busca"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {secretariaFiltro && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                    {secretariaFiltro}
+                    <button
+                      onClick={() => setSecretariaFiltro('')}
+                      className="hover:bg-purple-200 dark:hover:bg-purple-800 rounded p-0.5"
+                      aria-label="Remover filtro de secretaria"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={limparFiltros}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                >
+                  Limpar todos
+                </button>
+              </motion.div>
+            )}
           </div>
 
           {/* Botões de Ação */}
@@ -230,34 +316,60 @@ export default function ContatosPage() {
 
         {/* Cards List */}
         <div className="px-4 py-4 space-y-3">
-          {isLoading ? (
+          {isLoading || isRefetching ? (
             <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
                   className="bg-white dark:bg-neutral-800 rounded-xl p-4 animate-pulse border border-gray-100 dark:border-neutral-700"
                 >
-                  <div className="h-6 bg-gray-200 dark:bg-neutral-700 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-1/2 mb-3"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-2/3"></div>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="h-6 bg-gray-200 dark:bg-neutral-700 rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-1/2 mb-2"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-2/3"></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-8 h-8 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+                      <div className="w-8 h-8 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="h-10 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+                    <div className="h-10 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+                  </div>
                 </div>
               ))}
             </div>
           ) : contatos?.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <User className="w-8 h-8 text-gray-400" />
+                {temFiltrosAtivos ? (
+                  <Search className="w-8 h-8 text-gray-400" />
+                ) : (
+                  <User className="w-8 h-8 text-gray-400" />
+                )}
               </div>
               <p className="text-gray-500 dark:text-gray-300 text-lg font-medium">
-                Nenhum contato cadastrado ainda
+                {temFiltrosAtivos ? 'Nenhum contato encontrado' : 'Nenhum contato cadastrado ainda'}
               </p>
               <p className="text-gray-400 dark:text-gray-400 text-sm mt-1 mb-6">
-                Adicione seu primeiro contato ou importe da sua agenda
+                {temFiltrosAtivos 
+                  ? 'Tente ajustar os filtros ou limpe a busca para ver todos os contatos'
+                  : 'Adicione seu primeiro contato ou importe da sua agenda'
+                }
               </p>
-              <Button onClick={handleNovoContato} className="min-h-[44px]">
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Contato
-              </Button>
+              {temFiltrosAtivos ? (
+                <Button onClick={limparFiltros} className="min-h-[44px]" variant="outline">
+                  <X className="w-4 h-4 mr-2" />
+                  Limpar Filtros
+                </Button>
+              ) : (
+                <Button onClick={handleNovoContato} className="min-h-[44px]">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Primeiro Contato
+                </Button>
+              )}
             </div>
           ) : (
             contatos?.map((contato: any, index) => (
@@ -271,36 +383,42 @@ export default function ContatosPage() {
                 {/* Header do Card */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                       {contato.nome}
+                      {contato.secretaria && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                          <Building2 className="w-3 h-3" />
+                          {contato.secretaria.replace('Secretaria de ', '')}
+                        </span>
+                      )}
                     </h3>
                     {contato.telefone && (
                       <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2 mt-1">
-                        <Phone className="w-4 h-4" />
-                        {contato.telefone}
+                        <Phone className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{contato.telefone}</span>
                       </p>
                     )}
                     {contato.email && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2 mt-1 truncate">
-                        <Mail className="w-4 h-4" />
-                        {contato.email}
+                      <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2 mt-1">
+                        <Mail className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{contato.email}</span>
                       </p>
                     )}
                   </div>
                   
                   {/* Botões de Ação */}
-                  <div className="flex gap-2 ml-3">
+                  <div className="flex gap-2 ml-3 flex-shrink-0">
                     <button
                       onClick={() => handleEditContato(contato)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                      aria-label="Editar contato"
+                      className="p-2 min-h-[40px] min-w-[40px] text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors active:scale-95"
+                      aria-label={`Editar ${contato.nome}`}
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setContatoParaDeletar(contato)}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      aria-label="Excluir contato"
+                      className="p-2 min-h-[40px] min-w-[40px] text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors active:scale-95"
+                      aria-label={`Excluir ${contato.nome}`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

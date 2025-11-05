@@ -7,14 +7,17 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { MESSAGES } from '@/utils/messages';
 import { maskPhone, validatePhone, maskCEP, validateCEP, buscarCEP, formatName } from '@/utils/formatters';
-import { Loader2, X, MapPin, Phone, Mail, User } from 'lucide-react';
+import { Loader2, X, MapPin, Phone, Mail, User, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Combobox } from '@/components/ui/combobox';
+import { SECRETARIAS } from '@/types';
 
 interface Contato {
   id?: string;
   nome: string;
   telefone: string;
   email?: string;
+  secretaria?: string;
   cep?: string;
   rua?: string;
   numero?: string;
@@ -42,6 +45,7 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
     nome: '',
     telefone: '',
     email: '',
+    secretaria: '',
     cep: '',
     rua: '',
     numero: '',
@@ -58,12 +62,14 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
         ...contato,
         telefone: maskPhone(contato.telefone || ''),
         cep: maskCEP(contato.cep || ''),
+        secretaria: contato.secretaria || '',
       });
     } else {
       setFormData({
         nome: '',
         telefone: '',
         email: '',
+        secretaria: '',
         cep: '',
         rua: '',
         numero: '',
@@ -113,8 +119,13 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
     e.preventDefault();
     
     // Validações
-    if (!formData.nome || !formData.telefone) {
-      showToast(MESSAGES.VALIDATION.REQUIRED_FIELDS, 'error');
+    if (!formData.nome?.trim()) {
+      showToast('Nome é obrigatório', 'error');
+      return;
+    }
+
+    if (!formData.telefone?.trim()) {
+      showToast('Telefone é obrigatório', 'error');
       return;
     }
     
@@ -128,15 +139,33 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
       showToast(MESSAGES.ERROR.INVALID_EMAIL, 'error');
       return;
     }
+
+    // Validação de CEP se fornecido
+    if (formData.cep) {
+      const cepLimpo = formData.cep.replace(/\D/g, '');
+      if (cepLimpo.length > 0 && !validateCEP(cepLimpo)) {
+        showToast('CEP inválido. Use o formato #####-###', 'error');
+        return;
+      }
+    }
     
     setCarregando(true);
     
     try {
       const dadosParaSalvar = {
         ...formData,
-        nome: formatName(formData.nome),
+        nome: formatName(formData.nome.trim()),
         telefone: telefoneLimpo,
-        cep: formData.cep?.replace(/\D/g, '') || undefined,
+        email: formData.email?.trim() || undefined,
+        secretaria: formData.secretaria?.trim() || undefined,
+        cep: formData.cep?.replace(/\D/g, '').trim() || undefined,
+        rua: formData.rua?.trim() || undefined,
+        numero: formData.numero?.trim() || undefined,
+        complemento: formData.complemento?.trim() || undefined,
+        bairro: formData.bairro?.trim() || undefined,
+        cidade: formData.cidade?.trim() || undefined,
+        uf: formData.uf?.trim().toUpperCase() || undefined,
+        observacoes: formData.observacoes?.trim() || undefined,
       };
       
       await onSave(dadosParaSalvar);
@@ -164,12 +193,12 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[1100]"
             onClick={onClose}
           />
           
           {/* Modal Container - Otimizado para mobile */}
-          <div className="fixed inset-0 z-[101] flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
+          <div className="fixed inset-0 z-[1101] flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
             <motion.div
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
@@ -203,13 +232,15 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <User className="w-4 h-4 inline mr-2" />
-                        Nome <span className="text-red-600">*</span>
+                        Nome <span className="text-red-600" aria-label="obrigatório">*</span>
                       </label>
                       <Input
                         value={formData.nome}
                         onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                         placeholder="Nome completo"
                         required
+                        aria-required="true"
+                        autoComplete="name"
                         className="dark:bg-neutral-700 dark:border-neutral-600 dark:text-gray-100"
                       />
                     </div>
@@ -219,14 +250,17 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           <Phone className="w-4 h-4 inline mr-2" />
-                          Telefone <span className="text-red-600">*</span>
+                          Telefone <span className="text-red-600" aria-label="obrigatório">*</span>
                         </label>
                         <Input
                           value={formData.telefone}
                           onChange={(e) => setFormData({ ...formData, telefone: maskPhone(e.target.value) })}
                           placeholder="(11) 98765-4321"
                           required
+                          aria-required="true"
                           maxLength={15}
+                          type="tel"
+                          autoComplete="tel"
                           className="dark:bg-neutral-700 dark:border-neutral-600 dark:text-gray-100"
                         />
                       </div>
@@ -241,9 +275,24 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           placeholder="contato@email.com"
+                          autoComplete="email"
                           className="dark:bg-neutral-700 dark:border-neutral-600 dark:text-gray-100"
                         />
                       </div>
+                    </div>
+
+                    {/* Secretaria */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <Building2 className="w-4 h-4 inline mr-2" />
+                        Secretaria (opcional)
+                      </label>
+                      <Combobox
+                        items={Array.from(SECRETARIAS)}
+                        value={formData.secretaria || undefined}
+                        onChange={(val) => setFormData({ ...formData, secretaria: val || '' })}
+                        placeholder="Selecione a secretaria"
+                      />
                     </div>
 
                     {/* CEP */}
@@ -259,14 +308,17 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
                           onBlur={handleCEPBlur}
                           placeholder="12345-678"
                           maxLength={9}
+                          inputMode="numeric"
+                          autoComplete="postal-code"
                           className="dark:bg-neutral-700 dark:border-neutral-600 dark:text-gray-100 pr-10"
+                          aria-describedby="cep-help"
                         />
                         {buscandoCEP && (
-                          <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
                         )}
                       </div>
                       {buscandoCEP && (
-                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        <p id="cep-help" className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                           {MESSAGES.INFO.SEARCHING_CEP}
                         </p>
                       )}
@@ -347,6 +399,8 @@ export function ContatoModal({ isOpen, onClose, onSave, contato, mode }: Contato
                           onChange={(e) => setFormData({ ...formData, uf: e.target.value.toUpperCase() })}
                           placeholder="SP"
                           maxLength={2}
+                          pattern="[A-Z]{2}"
+                          autoComplete="address-level1"
                           className="dark:bg-neutral-700 dark:border-neutral-600 dark:text-gray-100 uppercase"
                         />
                       </div>
