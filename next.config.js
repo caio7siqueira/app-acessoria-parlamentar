@@ -51,9 +51,14 @@ const nextConfig = {
   // Transpilação de módulos ES para melhor compatibilidade
   transpilePackages: ['@supabase/supabase-js'],
 
+  // Disable CSS inlining to avoid critters issues
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
   // Configurações experimentais para performance
   experimental: {
-    optimizeCss: true,
+    optimizeCss: false,
   },
 };
 
