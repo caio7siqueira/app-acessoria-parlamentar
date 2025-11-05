@@ -2,6 +2,15 @@
 
 Este guia mostra como fazer deploy do Sistema de Assessoria Parlamentar na Vercel.
 
+## ⚡ Pré-requisitos
+
+Antes de fazer deploy, certifique-se que:
+
+- ✅ `.gitignore` inclui `.next/` e `node_modules/`
+- ✅ `package.json` tem `"node": "18.x"` em engines
+- ✅ `.vercelignore` está configurado (ignorar `.next/`)
+- ✅ Build local passa sem erros (`npm run build`)
+
 ## 🚀 Deploy Automático (Recomendado)
 
 ### 1. Preparar Repositório
@@ -23,8 +32,9 @@ git push origin main
 5. Configure o projeto:
    - **Framework Preset**: Next.js
    - **Root Directory**: `./` (raiz)
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `.next`
+   - **Build Command**: `npm run build` (ou deixe em branco, detecta automaticamente)
+   - **Output Directory**: `.next` (ou deixe em branco)
+   - **Node.js Version**: 18.x (detectado automaticamente do package.json)
 
 ### 3. Configurar Variáveis de Ambiente
 
@@ -384,10 +394,120 @@ Para debugar em produção:
 
 ---
 
-**Próximo passo**: Sistema está pronto para uso! 🎉
+## 🐛 Troubleshooting
+
+### Erro: "Detected engines in package.json that will automatically upgrade"
+
+**Problema**: Versão genérica do Node.js (`>=14.0.0`)
+
+**Solução**: ✅ **JÁ CORRIGIDO** - `package.json` agora usa `"node": "18.x"`
+
+```json
+{
+  "engines": {
+    "node": "18.x"
+  }
+}
+```
+
+### Erro: "You should not upload the .next directory"
+
+**Problema**: Pasta `.next` sendo enviada ao Git
+
+**Solução**: ✅ **JÁ CORRIGIDO** - `.vercelignore` e `.gitignore` configurados
+
+Verificar:
+```bash
+# .gitignore deve conter:
+.next/
+node_modules/
+
+# .vercelignore deve conter:
+.next/
+out/
+```
+
+### Erro: "Build failed" ou "Module not found"
+
+**Possíveis causas**:
+
+1. **Dependências faltando**:
+   ```bash
+   npm install
+   npm run build  # Testar localmente
+   ```
+
+2. **Imports incorretos**:
+   - Verifique caminhos com `@/`
+   - Certifique-se que `tsconfig.json` tem `baseUrl` e `paths`
+
+3. **Variáveis de ambiente**:
+   - Configure todas as vars no painel da Vercel
+   - Use `NEXT_PUBLIC_` para vars do cliente
+
+### Erro: "Timeout" ou "Function Execution Timeout"
+
+**Problema**: Funções serverless demorando muito (>10s no free plan)
+
+**Soluções**:
+1. Otimize queries do Supabase
+2. Use paginação em listagens grandes
+3. Considere fazer upgrade do plano Vercel
+
+### Erro: "Supabase connection failed"
+
+**Problema**: Variáveis de ambiente incorretas
+
+**Verificar**:
+1. `NEXT_PUBLIC_SUPABASE_URL` está correto
+2. `NEXT_PUBLIC_SUPABASE_ANON_KEY` está correto
+3. RLS policies estão configuradas no Supabase
+
+### Build passa mas app não funciona
+
+**Checklist**:
+1. ✅ Variáveis de ambiente configuradas
+2. ✅ Migrations aplicadas no Supabase
+3. ✅ RLS policies ativas
+4. ✅ CORS configurado (se necessário)
+5. ✅ Domínio correto em `NEXTAUTH_URL`
+
+### Logs de Debug
+
+**Ver logs na Vercel**:
+1. Dashboard → Projeto → "Functions"
+2. Clique em "View Function Logs"
+3. Filtrar por erro ou warning
+
+**Ver logs do Supabase**:
+1. Dashboard Supabase → "Logs"
+2. Verificar query errors, auth errors
+
+---
+
+## 📋 Checklist Final de Deploy
+
+Antes de fazer deploy, verifique:
+
+- [ ] ✅ Build local passa (`npm run build`)
+- [ ] ✅ TypeScript sem erros (`npm run type-check`)
+- [ ] ✅ `.gitignore` contém `.next/` e `node_modules/`
+- [ ] ✅ `.vercelignore` criado
+- [ ] ✅ `package.json` tem `"node": "18.x"`
+- [ ] ✅ `vercel.json` configurado (opcional)
+- [ ] ✅ Variáveis de ambiente documentadas
+- [ ] ✅ Migrations aplicadas no Supabase
+- [ ] ✅ RLS policies configuradas
+- [ ] ✅ Código commitado e pushed para GitHub
+- [ ] ✅ Domínio/URL definido para `NEXTAUTH_URL`
+
+---
+
+**Próximo passo**: Deploy pronto! Sistema está em produção! 🎉
 
 **Dicas finais:**
 - Monitore logs regularmente
 - Teste funcionalidades críticas após deploy
 - Configure alertas para erros
 - Documente mudanças importantes
+- Aplique migrations pendentes (009, 010, 011)
