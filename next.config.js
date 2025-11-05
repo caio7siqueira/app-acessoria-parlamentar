@@ -62,8 +62,13 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react'],
   },
 
-  // Disable static export that's causing critters issues
+  // Force dynamic rendering to avoid static generation issues
   output: 'standalone',
+  
+  // Configure generation behavior
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
+  },
 
   // Use SWC minifier instead of Terser/critters
   swcMinify: true,
