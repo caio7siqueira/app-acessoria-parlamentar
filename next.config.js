@@ -56,13 +56,16 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  // Force disable experimental features that use critters
+  // Force disable all optimizations that could use critters
   experimental: {
     optimizeCss: false,
     optimizePackageImports: ['lucide-react'],
   },
 
-  // Disable CSS optimization and minification that uses critters
+  // Disable static export that's causing critters issues
+  output: 'standalone',
+
+  // Use SWC minifier instead of Terser/critters
   swcMinify: true,
 };
 
