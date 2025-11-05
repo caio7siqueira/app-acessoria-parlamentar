@@ -25,7 +25,11 @@ export function validateEnvironment(): EnvironmentConfig {
         NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
         NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
         // NextAuth variáveis só são necessárias no servidor
-        NEXTAUTH_URL: isServer ? process.env.NEXTAUTH_URL : 'http://localhost:3000',
+        NEXTAUTH_URL: isServer ? process.env.NEXTAUTH_URL : (
+            typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
+                ? window.location.origin
+                : 'http://localhost:3000'
+        ),
         NEXTAUTH_SECRET: isServer ? process.env.NEXTAUTH_SECRET : 'placeholder-for-client',
     };
 
