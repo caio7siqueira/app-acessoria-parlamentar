@@ -51,15 +51,19 @@ const nextConfig = {
   // Transpilação de módulos ES para melhor compatibilidade
   transpilePackages: ['@supabase/supabase-js'],
 
-  // Disable CSS inlining to avoid critters issues
+  // Disable CSS optimization completely
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  // Configurações experimentais para performance
+  // Force disable experimental features that use critters
   experimental: {
     optimizeCss: false,
+    optimizePackageImports: ['lucide-react'],
   },
+
+  // Disable CSS optimization and minification that uses critters
+  swcMinify: true,
 };
 
 module.exports = nextConfig;

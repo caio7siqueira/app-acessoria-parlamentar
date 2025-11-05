@@ -1,4 +1,4 @@
-// File: /workspaces/app-acessoria-parlamentar/src/app/atendimentos/[id]/page.tsx
+// File: C:\Users\oi414024\Documents\Efizion\app-parlamentar\app-acessoria-parlamentar\src\app\atendimentos\[id]\page.tsx
 import * as entry from '../../../../../src/app/atendimentos/[id]/page.js'
 import type { ResolvingMetadata } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
