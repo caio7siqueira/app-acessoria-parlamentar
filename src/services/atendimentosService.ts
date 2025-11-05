@@ -96,32 +96,42 @@ export class AtendimentosService {
   // Criar novo atendimento
   static async criar(atendimento: AtendimentoForm): Promise<Atendimento> {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       throw new Error('Usuário não autenticado');
     }
 
-    // Verificar se o usuário existe na tabela usuarios
-    const { data: usuarioExiste } = await supabase
+    // Buscar ou criar usuário na tabela usuarios
+    let { data: usuarioExiste } = await supabase
       .from('usuarios')
       .select('id')
       .eq('email', user.email)
       .single();
 
-    // Se não existe, criar registro do usuário
+    // Se não existe, criar registro do usuário e obter o ID
     if (!usuarioExiste) {
-      await supabase.from('usuarios').insert({
-        email: user.email,
-        nome: user.email?.split('@')[0] || 'Usuário',
-        ativo: true
-      });
+      const { data: novoUsuario, error: errorUsuario } = await supabase
+        .from('usuarios')
+        .insert({
+          email: user.email,
+          nome: user.email?.split('@')[0] || 'Usuário',
+          ativo: true
+        })
+        .select('id')
+        .single();
+
+      if (errorUsuario) {
+        throw new Error(`Erro ao criar usuário: ${errorUsuario.message}`);
+      }
+
+      usuarioExiste = novoUsuario;
     }
 
     const { data, error } = await supabase
       .from('atendimentos')
       .insert({
         ...atendimento,
-        usuario_criacao: user.id
+        usuario_criacao: usuarioExiste.id // Usar o ID da tabela usuarios, não do auth.users
       })
       .select()
       .single();
@@ -145,12 +155,12 @@ export class AtendimentosService {
       usuario: _usuario, // ❌ ESTE É O CAMPO QUE CAUSA O ERRO!
       ...dadosAtualizacao
     } = atendimento as any;
-    
+
     // Limpar campos undefined para evitar erros de tipo
     const dadosLimpos = Object.fromEntries(
       Object.entries(dadosAtualizacao).filter(([_, v]) => v !== undefined)
     );
-    
+
     const { data, error } = await supabase
       .from('atendimentos')
       .update(dadosLimpos)

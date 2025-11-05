@@ -13,7 +13,7 @@ export default function AuthCallback() {
     const hash = window.location.hash;
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type');
-    
+
     // Debug: Log todos os parâmetros recebidos
     console.log('🔍 Auth Callback Debug:', {
       type,
@@ -22,7 +22,7 @@ export default function AuthCallback() {
       allParams: Object.fromEntries(urlParams.entries()),
       url: window.location.href
     });
-    
+
     // Se for um convite (vem na URL ou no hash), SEMPRE redirecionar para definir senha
     if (type === 'invite' || hash.includes('type=invite')) {
       console.log('✅ Convite detectado - redirecionando para definir senha');
@@ -30,14 +30,14 @@ export default function AuthCallback() {
       router.replace('/definir-senha?type=invite');
       return;
     }
-    
+
     // Se for outro tipo de autenticação (magic link, etc), redirecionar para atendimentos
     if (type) {
       console.log('🔄 Outro tipo de auth, redirecionando para atendimentos');
       router.push('/atendimentos');
       return;
     }
-    
+
     // Fallback padrão
     console.log('🏠 Fallback, redirecionando para login');
     router.push('/login');

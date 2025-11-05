@@ -15,7 +15,7 @@ export default function DefinirSenhaPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
-  
+
   const [senha, setSenha] = useState('');
   const [confirmaSenha, setConfirmaSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -27,7 +27,7 @@ export default function DefinirSenhaPage() {
     // Verificar se tem token no parâmetro
     const token = searchParams?.get('token');
     const type = searchParams?.get('type');
-    
+
     // Debug: Log dos parâmetros recebidos
     console.log('🔍 Definir Senha Debug:', {
       token,
@@ -35,14 +35,14 @@ export default function DefinirSenhaPage() {
       allParams: Object.fromEntries(searchParams?.entries() || []),
       url: window.location.href
     });
-    
+
     // Para convites, o token pode vir via diferentes mecanismos
     if (type !== 'invite') {
       setTokenValido(false);
       showToast(MESSAGES.ERROR.INVALID_TOKEN, 'error');
       return;
     }
-    
+
     // Se for convite mas não tem token, pode ser que a sessão já esteja ativa
     if (!token) {
       console.log('⚠️ Convite sem token explícito - verificando sessão ativa');
@@ -55,48 +55,48 @@ export default function DefinirSenhaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!senha || !confirmaSenha) {
       showToast(MESSAGES.VALIDATION.REQUIRED_FIELDS, 'error');
       return;
     }
-    
+
     if (!validacaoSenha.valid) {
       showToast(validacaoSenha.message, 'error');
       return;
     }
-    
+
     if (senha !== confirmaSenha) {
       showToast(MESSAGES.ERROR.PASSWORD_MISMATCH, 'error');
       return;
     }
-    
+
     setCarregando(true);
-    
+
     try {
       const supabase = getSupabaseClient();
-      
+
       console.log('🔧 Atualizando senha do usuário via convite');
-      
+
       // Atualizar senha do usuário
       const { error } = await supabase.auth.updateUser({
         password: senha,
       });
-      
+
       if (error) {
         console.error('❌ Erro ao atualizar senha:', error);
         throw error;
       }
-      
+
       console.log('✅ Senha definida com sucesso');
       showToast(MESSAGES.INFO.PASSWORD_CREATED, 'success');
-      
+
       // Redirecionar para dashboard após 2 segundos
       setTimeout(() => {
         console.log('🔄 Redirecionando para dashboard');
         router.push('/atendimentos');
       }, 2000);
-      
+
     } catch (error: any) {
       console.error('Erro ao definir senha:', error);
       showToast(error.message || MESSAGES.ERROR.GENERIC, 'error');
@@ -160,11 +160,10 @@ export default function DefinirSenhaPage() {
               </button>
             </div>
             {senha && (
-              <p className={`text-xs mt-1 ${
-                validacaoSenha.message.includes('forte') ? 'text-green-600' :
-                validacaoSenha.message.includes('média') ? 'text-yellow-600' :
-                'text-gray-500 dark:text-gray-400'
-              }`}>
+              <p className={`text-xs mt-1 ${validacaoSenha.message.includes('forte') ? 'text-green-600' :
+                  validacaoSenha.message.includes('média') ? 'text-yellow-600' :
+                    'text-gray-500 dark:text-gray-400'
+                }`}>
                 {validacaoSenha.message}
               </p>
             )}
