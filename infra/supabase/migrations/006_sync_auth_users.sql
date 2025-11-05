@@ -14,7 +14,10 @@ BEGIN
     true
   )
   ON CONFLICT (email) DO UPDATE
-  SET id = NEW.id;
+  SET 
+    id = NEW.id,
+    ativo = true,
+    nome = COALESCE(NEW.raw_user_meta_data->>'name', SPLIT_PART(NEW.email, '@', 1));
   
   RETURN NEW;
 END;
@@ -38,7 +41,10 @@ FROM auth.users u
 LEFT JOIN usuarios usr ON u.id = usr.id
 WHERE usr.id IS NULL
 ON CONFLICT (email) DO UPDATE
-SET id = EXCLUDED.id;
+SET 
+  id = EXCLUDED.id,
+  ativo = true,
+  nome = EXCLUDED.nome;
 
 -- Comentários
 COMMENT ON FUNCTION sync_user_to_usuarios() IS 'Sincroniza automaticamente usuários do auth.users para a tabela usuarios';
