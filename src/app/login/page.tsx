@@ -17,7 +17,7 @@ export default function LoginPage() {
     const supabase = getSupabaseClient();
 
     // Pegar URL de redirecionamento dos parâmetros
-    const redirectTo = searchParams.get('redirectTo') || '/';
+    const redirectTo = searchParams?.get('redirectTo') || '/';
 
     const waitForSession = async (timeoutMs = 2000, intervalMs = 100) => {
         const start = Date.now();

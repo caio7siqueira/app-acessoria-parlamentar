@@ -32,7 +32,6 @@
     "@tanstack/react-query": "^4.36.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
-    "critters": "^0.0.23",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.292.0",
@@ -52,6 +51,7 @@
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "autoprefixer": "^10.4.16",
+    "critters": "^0.0.23",
     "eslint": "^8.53.0",
     "eslint-config-next": "13.5.6",
     "playwright": "^1.56.1",
@@ -60,6 +60,6 @@
     "typescript": "^5.2.2"
   },
   "engines": {
-    "node": "22.x"
+    "node": "18.x"
   }
 }

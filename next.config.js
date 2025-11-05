@@ -64,7 +64,7 @@ const nextConfig = {
 
   // Force dynamic rendering to avoid static generation issues
   output: 'standalone',
-  
+
   // Configure generation behavior
   generateBuildId: async () => {
     return 'build-' + Date.now();
