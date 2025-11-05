@@ -167,6 +167,17 @@ export class AtendimentosService {
 
   // Excluir atendimento
   static async excluir(id: number): Promise<void> {
+    // Primeiro, excluir notificações relacionadas
+    const { error: notifError } = await supabase
+      .from('notificacoes')
+      .delete()
+      .eq('atendimento_id', id);
+
+    if (notifError) {
+      throw new Error(`Erro ao excluir notificações: ${notifError.message}`);
+    }
+
+    // Depois, excluir o atendimento (histórico é deletado automaticamente por CASCADE)
     const { error } = await supabase
       .from('atendimentos')
       .delete()

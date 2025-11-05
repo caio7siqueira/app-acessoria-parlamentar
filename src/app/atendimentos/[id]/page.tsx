@@ -7,6 +7,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AtendimentosService } from '@/services/atendimentosService';
 import type { AtendimentoForm } from '@/types';
 import { CANAIS, STATUS_ATENDIMENTO, TIPOS_ENCAMINHAMENTO, URGENCIAS, SECRETARIAS } from '@/types';
@@ -36,6 +37,7 @@ export default function AtendimentoDetalhePage() {
 
   const [form, setForm] = useState<AtendimentoForm | null>(null);
   const [erro, setErro] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const isConcluido = atendimento?.status === 'Concluído';
 
@@ -104,14 +106,17 @@ export default function AtendimentoDetalhePage() {
     await atualizar.mutateAsync(form);
   };
 
-  const handleDelete = async () => {
-    if (confirm(MESSAGES.WARNING.CONFIRM_DELETE_ATENDIMENTO)) {
-      // Vibração tátil no iPhone
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(10);
-      }
-      await excluir.mutateAsync();
+  const handleDeleteClick = () => {
+    // Vibração tátil no iPhone
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10);
     }
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    await excluir.mutateAsync();
+    setShowDeleteDialog(false);
   };
 
   if (!Number.isFinite(id)) return null;
@@ -144,8 +149,9 @@ export default function AtendimentoDetalhePage() {
             <motion.div whileTap={{ scale: 0.95 }} transition={{ duration: 0.2 }}>
               <Button
                 variant="outline"
-                onClick={handleDelete}
-                className="bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 active:scale-95 transition-all duration-200 ease-in-out rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 min-h-[44px]"
+                onClick={handleDeleteClick}
+                disabled={excluir.isPending}
+                className="bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 active:scale-95 transition-all duration-200 ease-in-out rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Excluir atendimento"
               >
                 <Trash2 className="w-4 h-4" />
@@ -265,6 +271,19 @@ export default function AtendimentoDetalhePage() {
             </Card>
           </div>
         )}
+
+        {/* Modal de Confirmação de Exclusão */}
+        <ConfirmDialog
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleDeleteConfirm}
+          title="Excluir Atendimento"
+          description="Tem certeza que deseja excluir este atendimento? Esta ação não pode ser desfeita e todos os dados relacionados (histórico e notificações) serão permanentemente removidos."
+          confirmText="Sim, excluir"
+          cancelText="Cancelar"
+          variant="danger"
+          isLoading={excluir.isPending}
+        />
       </div>
     </DashboardLayout>
   );

@@ -46,7 +46,7 @@ export default function NotificationPanel() {
         } catch (err) {
             console.error('❌ Exceção ao carregar notificações:', err)
         }
-    }, [supabase])
+    }, []) // supabase é singleton, não precisa na dependência
 
     // Configurar Realtime subscription
     useEffect(() => {
@@ -89,7 +89,7 @@ export default function NotificationPanel() {
                 console.log('🧹 Canal de notificações removido')
             }
         }
-    }, [supabase, loadNotifications])
+    }, [loadNotifications]) // Removido supabase - é singleton
 
     // Marcar notificação como lida
     const markAsRead = useCallback(async (id: string) => {
@@ -116,7 +116,7 @@ export default function NotificationPanel() {
             console.error('❌ Exceção ao marcar como lida:', err)
             loadNotifications()
         }
-    }, [supabase, loadNotifications])
+    }, [loadNotifications]) // Removido supabase - é singleton
 
     // Marcar todas como lidas
     const markAllAsRead = useCallback(async () => {

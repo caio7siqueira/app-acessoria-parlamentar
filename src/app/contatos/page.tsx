@@ -306,7 +306,9 @@ export default function ContatosPage() {
             
             <Button
               onClick={handleImportarContatos}
-              className="flex-1 min-h-[44px] flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+              disabled={true}
+              className="flex-1 min-h-[44px] flex items-center justify-center gap-2 bg-gray-400 hover:bg-gray-400 cursor-not-allowed opacity-50"
+              title="Funcionalidade em desenvolvimento"
             >
               <Download className="w-4 h-4" />
               Importar
