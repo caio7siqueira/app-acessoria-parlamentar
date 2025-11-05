@@ -44,12 +44,12 @@ export async function POST(request: NextRequest) {
         // Enviar convite via admin - detectar URL automaticamente
         const host = request.headers.get('host');
         const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
-            || process.env.NEXT_PUBLIC_SITE_URL 
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+            || process.env.NEXT_PUBLIC_SITE_URL
             || (host ? `${protocol}://${host}` : 'http://localhost:3000');
-            
+
         const redirectTo = `${baseUrl}/auth/callback?type=invite`;
-        
+
         // Log para depuração
         console.log('🔗 Enviando convite com redirectTo:', redirectTo);
         console.log('📊 Variáveis:', {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
             protocol,
             baseUrl
         });
-        
+
         const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
             redirectTo,
         })
