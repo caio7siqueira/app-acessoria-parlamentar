@@ -31,26 +31,23 @@ export default function ConfiguracoesPage() {
 
   const carregarUsuarios = async () => {
     try {
-      // Tentar buscar via API server-side que usa service role
-      const res = await fetch('/api/list-users')
-      if (res.ok) {
-        const json = await res.json()
-        setUsuarios(json.users || [])
-        return
+      // Buscar usuários da tabela usuarios (não auth.users)
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('id, nome, email, role, ativo, criado_em')
+        .eq('ativo', true)
+        .order('criado_em', { ascending: false });
+      
+      if (error) {
+        console.error('Erro ao carregar usuários:', error);
+        setUsuarios([]);
+        return;
       }
+      
+      setUsuarios(data || []);
     } catch (err) {
-      // ignore, tentaremos fallback abaixo
-    }
-
-    try {
-      // Fallback (pode falhar se chamado do client sem service role)
-      const { data, error } = await supabase.auth.admin.listUsers();
-      if (!error && data) {
-        setUsuarios(data.users || [])
-      }
-    } catch (err) {
-      console.warn('Não foi possível listar usuários pelo client (requer service role)')
-      setUsuarios([])
+      console.error('Erro ao carregar usuários:', err);
+      setUsuarios([]);
     }
   };
 
@@ -196,11 +193,16 @@ export default function ConfiguracoesPage() {
                     {usuarios.map((u) => (
                       <div key={u.id} className="p-3 flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium">{u.email}</p>
+                          <p className="text-sm font-medium">{u.nome}</p>
                           <p className="text-xs text-gray-500">
-                            {u.email_confirmed_at ? 'Confirmado' : 'Pendente'} •
-                            Criado em {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                            {u.email} • Role: {u.role} • 
+                            Criado em {new Date(u.criado_em).toLocaleDateString('pt-BR')}
                           </p>
+                        </div>
+                        <div className="text-xs">
+                          <span className={`px-2 py-1 rounded-full ${u.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {u.ativo ? 'Ativo' : 'Inativo'}
+                          </span>
                         </div>
                       </div>
                     ))}
