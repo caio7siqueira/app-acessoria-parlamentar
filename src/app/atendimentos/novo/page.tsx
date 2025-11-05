@@ -11,6 +11,7 @@ import { AtendimentosService } from '@/services/atendimentosService';
 import type { AtendimentoForm } from '@/types';
 import { CANAIS, STATUS_ATENDIMENTO, TIPOS_ENCAMINHAMENTO, URGENCIAS, SECRETARIAS } from '@/types';
 import { useToast } from '@/components/ui/toast';
+import { MESSAGES } from '@/utils/messages';
 
 export default function NovoAtendimentoPage() {
   const router = useRouter();
@@ -34,11 +35,11 @@ export default function NovoAtendimentoPage() {
   const criar = useMutation({
     mutationFn: (dados: AtendimentoForm) => AtendimentosService.criar(dados),
     onSuccess: (novo) => {
-      showToast('Atendimento criado com sucesso', 'success');
+      showToast(MESSAGES.SUCCESS.ATENDIMENTO_CREATED, 'success');
       router.replace('/atendimentos');
     },
     onError: (e: any) => {
-      const msg = e?.message || 'Erro ao criar atendimento';
+      const msg = e?.message || MESSAGES.ERROR.ATENDIMENTO_SAVE;
       setErro(msg);
       showToast(msg, 'error');
     },

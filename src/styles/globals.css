@@ -47,14 +47,13 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 94.1%;
   }
-}
-
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    scroll-behavior: smooth;
   }
 }
 
@@ -65,7 +64,7 @@
   }
   
   .mobile-button {
-    @apply h-12 text-base font-medium;
+    @apply h-12 text-base font-medium min-h-[44px];
   }
   
   .card-shadow {
@@ -81,6 +80,14 @@
   
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0);
   }
   
   .safe-area-left {

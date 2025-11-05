@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { RelatorioParams } from '@/types';
+import { MESSAGES } from '@/utils/messages';
 
 // Usar cliente sem tipagem estrita para evitar conflitos
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,33 +11,48 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export class RelatoriosService {
   // Gerar relatório de atendimentos
   static async gerarRelatorio(params: RelatorioParams) {
-    let query = supabase
-      .from('atendimentos')
-      .select('*')
-      .gte('data_criacao', params.data_inicio)
-      .lte('data_criacao', params.data_fim)
-      .order('data_criacao', { ascending: false });
+    try {
+      // Validar parâmetros
+      if (!params.data_inicio || !params.data_fim) {
+        throw new Error('Datas de início e fim são obrigatórias.');
+      }
 
-    // Aplicar filtros opcionais
-    if (params.secretarias && params.secretarias.length > 0) {
-      query = query.in('secretaria', params.secretarias);
+      // Garantir que data_fim inclui o final do dia
+      const dataInicio = params.data_inicio;
+      const dataFim = `${params.data_fim} 23:59:59`;
+
+      let query = supabase
+        .from('atendimentos')
+        .select('*')
+        .gte('data_criacao', dataInicio)
+        .lte('data_criacao', dataFim)
+        .order('data_criacao', { ascending: false });
+
+      // Aplicar filtros opcionais
+      if (params.secretarias && params.secretarias.length > 0) {
+        query = query.in('secretaria', params.secretarias);
+      }
+
+      if (params.status && params.status.length > 0) {
+        query = query.in('status', params.status);
+      }
+
+      if (params.urgencia && params.urgencia.length > 0) {
+        query = query.in('prazo_urgencia', params.urgencia);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Erro na query de relatório:', error);
+        throw new Error(MESSAGES.ERROR.RELATORIO_GENERATE);
+      }
+
+      return data || [];
+    } catch (error: any) {
+      console.error('Erro ao gerar relatório:', error);
+      throw new Error(error.message || MESSAGES.ERROR.RELATORIO_GENERATE);
     }
-
-    if (params.status && params.status.length > 0) {
-      query = query.in('status', params.status);
-    }
-
-    if (params.urgencia && params.urgencia.length > 0) {
-      query = query.in('prazo_urgencia', params.urgencia);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(`Erro ao gerar relatório: ${error.message}`);
-    }
-
-    return data || [];
   }
 
   // Exportar para PDF
@@ -109,77 +125,104 @@ export class RelatoriosService {
 
   // Obter estatísticas do relatório
   static async obterEstatisticasRelatorio(params: Omit<RelatorioParams, 'formato'>) {
-    const dados = await this.gerarRelatorio({ ...params, formato: 'pdf' }) as any[];
+    try {
+      const dados = await this.gerarRelatorio({ ...params, formato: 'pdf' }) as any[];
 
-    // Calcular estatísticas
-    const totalAtendimentos = dados.length;
-
-    const porStatus = dados.reduce((acc, item) => {
-      acc[item.status] = (acc[item.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const porUrgencia = dados.reduce((acc, item) => {
-      acc[item.prazo_urgencia] = (acc[item.prazo_urgencia] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const porCanal = dados.reduce((acc, item) => {
-      acc[item.canal] = (acc[item.canal] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const porSecretaria = dados.reduce((acc, item) => {
-      if (item.secretaria) {
-        acc[item.secretaria] = (acc[item.secretaria] || 0) + 1;
+      // Se não houver dados, retornar estrutura vazia
+      if (!dados || dados.length === 0) {
+        return {
+          periodo: {
+            inicio: params.data_inicio,
+            fim: params.data_fim
+          },
+          resumo: {
+            total_atendimentos: 0,
+            atendimentos_urgentes: 0,
+            atendimentos_concluidos: 0,
+            taxa_conclusao: 0
+          },
+          distribuicao: {
+            por_status: [],
+            por_urgencia: [],
+            por_canal: [],
+            por_secretaria: []
+          }
+        };
       }
-      return acc;
-    }, {} as Record<string, number>);
 
-    const atendimentosUrgentes = dados.filter(
-      item => item.prazo_urgencia === 'Urgente' && item.status !== 'Concluído'
-    ).length;
+      // Calcular estatísticas
+      const totalAtendimentos = dados.length;
 
-    const atendimentosConcluidos = dados.filter(
-      item => item.status === 'Concluído'
-    ).length;
+      const porStatus = dados.reduce((acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
 
-    const taxaConclusao = totalAtendimentos > 0 ?
-      Math.round((atendimentosConcluidos / totalAtendimentos) * 100) : 0;
+      const porUrgencia = dados.reduce((acc, item) => {
+        acc[item.prazo_urgencia] = (acc[item.prazo_urgencia] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
 
-    return {
-      periodo: {
-        inicio: params.data_inicio,
-        fim: params.data_fim
-      },
-      resumo: {
-        total_atendimentos: totalAtendimentos,
-        atendimentos_urgentes: atendimentosUrgentes,
-        atendimentos_concluidos: atendimentosConcluidos,
-        taxa_conclusao: taxaConclusao
-      },
-      distribuicao: {
-        por_status: Object.entries(porStatus).map(([status, quantidade]) => ({
-          status,
-          quantidade: quantidade as number,
-          percentual: Math.round(((quantidade as number) / totalAtendimentos) * 100)
-        })),
-        por_urgencia: Object.entries(porUrgencia).map(([urgencia, quantidade]) => ({
-          urgencia,
-          quantidade: quantidade as number,
-          percentual: Math.round(((quantidade as number) / totalAtendimentos) * 100)
-        })),
-        por_canal: Object.entries(porCanal).map(([canal, quantidade]) => ({
-          canal,
-          quantidade: quantidade as number,
-          percentual: Math.round(((quantidade as number) / totalAtendimentos) * 100)
-        })),
-        por_secretaria: Object.entries(porSecretaria).map(([secretaria, quantidade]) => ({
-          secretaria,
-          quantidade: quantidade as number,
-          percentual: Math.round(((quantidade as number) / totalAtendimentos) * 100)
-        }))
-      }
-    };
+      const porCanal = dados.reduce((acc, item) => {
+        acc[item.canal] = (acc[item.canal] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const porSecretaria = dados.reduce((acc, item) => {
+        if (item.secretaria) {
+          acc[item.secretaria] = (acc[item.secretaria] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+
+      const atendimentosUrgentes = dados.filter(
+        item => item.prazo_urgencia === 'Urgente' && item.status !== 'Concluído'
+      ).length;
+
+      const atendimentosConcluidos = dados.filter(
+        item => item.status === 'Concluído'
+      ).length;
+
+      const taxaConclusao = totalAtendimentos > 0 ?
+        Math.round((atendimentosConcluidos / totalAtendimentos) * 100) : 0;
+
+      return {
+        periodo: {
+          inicio: params.data_inicio,
+          fim: params.data_fim
+        },
+        resumo: {
+          total_atendimentos: totalAtendimentos,
+          atendimentos_urgentes: atendimentosUrgentes,
+          atendimentos_concluidos: atendimentosConcluidos,
+          taxa_conclusao: taxaConclusao
+        },
+        distribuicao: {
+          por_status: Object.entries(porStatus).map(([status, quantidade]) => ({
+            status,
+            quantidade: quantidade as number,
+            percentual: Math.round(((quantidade as number) / totalAtendimentos) * 100)
+          })),
+          por_urgencia: Object.entries(porUrgencia).map(([urgencia, quantidade]) => ({
+            urgencia,
+            quantidade: quantidade as number,
+            percentual: Math.round(((quantidade as number) / totalAtendimentos) * 100)
+          })),
+          por_canal: Object.entries(porCanal).map(([canal, quantidade]) => ({
+            canal,
+            quantidade: quantidade as number,
+            percentual: Math.round(((quantidade as number) / totalAtendimentos) * 100)
+          })),
+          por_secretaria: Object.entries(porSecretaria).map(([secretaria, quantidade]) => ({
+            secretaria,
+            quantidade: quantidade as number,
+            percentual: Math.round(((quantidade as number) / totalAtendimentos) * 100)
+          }))
+        }
+      };
+    } catch (error: any) {
+      console.error('Erro ao obter estatísticas:', error);
+      throw new Error(error.message || MESSAGES.ERROR.RELATORIO_GENERATE);
+    }
   }
 }

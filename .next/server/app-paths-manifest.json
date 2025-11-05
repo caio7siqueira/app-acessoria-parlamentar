@@ -1,9 +1,15 @@
 {
-  "/relatorios/page": "app/relatorios/page.js",
-  "/atendimentos/page": "app/atendimentos/page.js",
+  "/_not-found": "app/_not-found.js",
   "/atendimentos/[id]/page": "app/atendimentos/[id]/page.js",
-  "/contatos/page": "app/contatos/page.js",
+  "/atendimentos/novo/page": "app/atendimentos/novo/page.js",
+  "/atendimentos/page": "app/atendimentos/page.js",
+  "/auth/callback/page": "app/auth/callback/page.js",
   "/configuracoes/page": "app/configuracoes/page.js",
+  "/contatos/page": "app/contatos/page.js",
+  "/login/page": "app/login/page.js",
+  "/relatorios/page": "app/relatorios/page.js",
+  "/api/invite-user/route": "app/api/invite-user/route.js",
   "/api/list-users/route": "app/api/list-users/route.js",
-  "/api/invite-user/route": "app/api/invite-user/route.js"
+  "/page": "app/page.js",
+  "/test-auth/page": "app/test-auth/page.js"
 }

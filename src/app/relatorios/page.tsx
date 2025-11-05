@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { RelatoriosService } from "@/services/relatoriosService";
 import { STATUS_ATENDIMENTO, URGENCIAS, SECRETARIAS } from "@/types";
 import { useToast } from "@/components/ui/toast";
+import { MESSAGES } from "@/utils/messages";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CalendarRange, BarChart3, Percent, AlertTriangle } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
@@ -49,7 +50,14 @@ export default function RelatoriosPage() {
   const handleGerar = async () => {
     setFoiGerado(false);
     const res = await refetch();
-    if (!res.error) setFoiGerado(true);
+    if (res.error) {
+      showToast(MESSAGES.ERROR.RELATORIO_GENERATE, 'error');
+    } else if (res.data?.resumo.total_atendimentos === 0) {
+      showToast(MESSAGES.WARNING.NO_DATA_FILTERS, 'warning');
+      setFoiGerado(true);
+    } else {
+      setFoiGerado(true);
+    }
   };
 
   // Combobox já retorna valores diretamente via onChange
@@ -144,11 +152,11 @@ export default function RelatoriosPage() {
                 onClick={handleGerar}
                 disabled={isFetching}
                 aria-label="Gerar relatório"
-                className="w-full md:w-auto mobile-button"
+                className="w-full md:w-auto mobile-button min-h-[44px]"
               >
                 {isFetching ? (
                   <span className="inline-flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Gerando...
+                    <Loader2 className="w-4 h-4 animate-spin" /> {MESSAGES.INFO.GENERATING_REPORT}
                   </span>
                 ) : (
                   "Gerar Relatório"
@@ -264,7 +272,7 @@ export default function RelatoriosPage() {
                         </li>
                       ))
                     ) : (
-                      <li className="text-sm text-gray-500 dark:text-gray-400">Sem dados</li>
+                      <li className="text-sm text-gray-500 dark:text-gray-400">{MESSAGES.WARNING.NO_DATA}</li>
                     )}
                   </ul>
                 </Card>
@@ -282,7 +290,7 @@ export default function RelatoriosPage() {
                         </li>
                       ))
                     ) : (
-                      <li className="text-sm text-gray-500 dark:text-gray-400">Sem dados</li>
+                      <li className="text-sm text-gray-500 dark:text-gray-400">{MESSAGES.WARNING.NO_DATA}</li>
                     )}
                   </ul>
                 </Card>
@@ -300,7 +308,7 @@ export default function RelatoriosPage() {
                         </li>
                       ))
                     ) : (
-                      <li className="text-sm text-gray-500 dark:text-gray-400">Sem dados</li>
+                      <li className="text-sm text-gray-500 dark:text-gray-400">{MESSAGES.WARNING.NO_DATA}</li>
                     )}
                   </ul>
                 </Card>
@@ -318,7 +326,7 @@ export default function RelatoriosPage() {
                         </li>
                       ))
                     ) : (
-                      <li className="text-sm text-gray-500 dark:text-gray-400">Sem dados</li>
+                      <li className="text-sm text-gray-500 dark:text-gray-400">{MESSAGES.WARNING.NO_DATA}</li>
                     )}
                   </ul>
                 </Card>
@@ -343,9 +351,9 @@ export default function RelatoriosPage() {
                   blob,
                   `relatorio_${dataInicio}_${dataFim}.csv`
                 );
-                showToast("Relatório exportado com sucesso", "success");
+                showToast(MESSAGES.SUCCESS.RELATORIO_EXPORTED, "success");
               } catch (e: any) {
-                showToast(e?.message || "Erro ao exportar", "error");
+                showToast(e?.message || MESSAGES.ERROR.RELATORIO_EXPORT, "error");
               }
             }}
             aria-label="Exportar CSV"
@@ -368,9 +376,9 @@ export default function RelatoriosPage() {
                   blob,
                   `relatorio_${dataInicio}_${dataFim}.csv`
                 );
-                showToast("Relatório exportado com sucesso", "success");
+                showToast(MESSAGES.SUCCESS.RELATORIO_EXPORTED, "success");
               } catch (e: any) {
-                showToast(e?.message || "Erro ao exportar", "error");
+                showToast(e?.message || MESSAGES.ERROR.RELATORIO_EXPORT, "error");
               }
             }}
             aria-label="Exportar Excel (CSV)"

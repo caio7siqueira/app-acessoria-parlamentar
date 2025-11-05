@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/services/supabaseClient'
+import { MESSAGES } from '@/utils/messages'
 
 export async function POST(request: NextRequest) {
     try {
@@ -7,7 +8,7 @@ export async function POST(request: NextRequest) {
         const email = (body.email || '').toString().trim()
 
         if (!email || !email.includes('@')) {
-            return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
+            return NextResponse.json({ error: MESSAGES.ERROR.INVALID_EMAIL }, { status: 400 })
         }
 
         const supabaseAdmin = getSupabaseAdmin()
@@ -19,13 +20,25 @@ export async function POST(request: NextRequest) {
         const { data: users, error: countError } = await supabaseAdmin
             .from('usuarios')
             .select('id', { count: 'exact' })
+            .eq('ativo', true)
 
         if (countError) {
             return NextResponse.json({ error: countError.message }, { status: 500 })
         }
 
         if (users && users.length >= 3) {
-            return NextResponse.json({ error: 'Número máximo de usuários atingido (limite: 3)' }, { status: 400 })
+            return NextResponse.json({ error: MESSAGES.ERROR.USER_LIMIT_REACHED }, { status: 400 })
+        }
+
+        // Verificar se usuário já existe
+        const { data: existingUser } = await supabaseAdmin
+            .from('usuarios')
+            .select('id')
+            .eq('email', email)
+            .single()
+
+        if (existingUser) {
+            return NextResponse.json({ error: MESSAGES.ERROR.USER_EXISTS }, { status: 400 })
         }
 
         // Enviar convite via admin
@@ -44,7 +57,7 @@ export async function POST(request: NextRequest) {
                 email,
                 ativo: false,
                 nome: email.split('@')[0],
-            })
+            } as any)
         } catch (err: any) {
             // Não bloquear o convite caso a inserção falhe; apenas logar
             console.error('Erro inserindo usuario na tabela usuarios:', err?.message || err)

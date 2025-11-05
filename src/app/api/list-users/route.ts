@@ -9,6 +9,7 @@ export async function GET() {
         }
 
         // Listar usuários (limitado para segurança)
+        // @ts-ignore - PageParams aceita limit em versões mais recentes
         const { data, error } = await supabaseAdmin.auth.admin.listUsers({ limit: 100 })
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 })

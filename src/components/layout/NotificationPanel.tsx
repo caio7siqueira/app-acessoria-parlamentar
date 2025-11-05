@@ -54,11 +54,15 @@ export default function NotificationPanel() {
     }
 
     const markAsRead = async (id: string) => {
+        const supabase = getSupabaseClient()
+        // @ts-ignore - Tipagem do Supabase com schemas customizados
         await supabase.from('notificacoes').update({ lida: true }).eq('id', id)
         loadNotifications()
     }
 
     const markAllAsRead = async () => {
+        const supabase = getSupabaseClient()
+        // @ts-ignore - Tipagem do Supabase com schemas customizados
         await supabase.from('notificacoes').update({ lida: true }).eq('lida', false)
         loadNotifications()
     }
