@@ -99,12 +99,32 @@ export class AtendimentosService {
   // Criar novo atendimento
   static async criar(atendimento: AtendimentoForm): Promise<Atendimento> {
     const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    // Verificar se o usuário existe na tabela usuarios
+    const { data: usuarioExiste } = await supabase
+      .from('usuarios')
+      .select('id')
+      .eq('email', user.email)
+      .single();
+
+    // Se não existe, criar registro do usuário
+    if (!usuarioExiste) {
+      await supabase.from('usuarios').insert({
+        email: user.email,
+        nome: user.email?.split('@')[0] || 'Usuário',
+        ativo: true
+      });
+    }
 
     const { data, error } = await supabase
       .from('atendimentos')
       .insert({
         ...atendimento,
-        usuario_criacao: user?.id
+        usuario_criacao: user.id
       })
       .select()
       .single();
@@ -118,9 +138,17 @@ export class AtendimentosService {
 
   // Atualizar atendimento
   static async atualizar(id: number, atendimento: Partial<AtendimentoForm>): Promise<Atendimento> {
+    // Remover campos que não devem ser atualizados
+    const { ...dadosAtualizacao } = atendimento;
+    
+    // Limpar campos undefined para evitar erros de tipo
+    const dadosLimpos = Object.fromEntries(
+      Object.entries(dadosAtualizacao).filter(([_, v]) => v !== undefined)
+    );
+    
     const { data, error } = await supabase
       .from('atendimentos')
-      .update(atendimento as any)
+      .update(dadosLimpos)
       .eq('id', id)
       .select()
       .single();

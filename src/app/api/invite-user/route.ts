@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Enviar convite via admin
-        const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || ''}/auth/callback`
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+        const redirectTo = `${appUrl}/auth/callback?type=invite`
         const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
             redirectTo,
         })

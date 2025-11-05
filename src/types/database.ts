@@ -145,6 +145,38 @@ export interface Database {
           observacoes?: string | null;
         };
       };
+      notificacoes: {
+        Row: {
+          id: string;
+          usuario_id: string | null;
+          titulo: string;
+          mensagem: string;
+          tipo: 'urgente' | 'prazo' | 'info';
+          lida: boolean;
+          atendimento_id: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          usuario_id?: string | null;
+          titulo: string;
+          mensagem: string;
+          tipo: 'urgente' | 'prazo' | 'info';
+          lida?: boolean;
+          atendimento_id?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          usuario_id?: string | null;
+          titulo?: string;
+          mensagem?: string;
+          tipo?: 'urgente' | 'prazo' | 'info';
+          lida?: boolean;
+          atendimento_id?: number | null;
+          created_at?: string;
+        };
+      };
     };
   };
 }
