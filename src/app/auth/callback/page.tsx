@@ -12,19 +12,35 @@ export default function AuthCallback() {
     const type = searchParams?.get('type');
     const token = searchParams?.get('token_hash') || searchParams?.get('token');
     
+    // Debug: Log todos os parâmetros recebidos
+    console.log('🔍 Auth Callback Debug:', {
+      type,
+      token,
+      allParams: Object.fromEntries(searchParams?.entries() || []),
+      url: window.location.href
+    });
+    
     // Se for um convite, redirecionar para página de definir senha
-    if (type === 'invite' && token) {
-      router.push(`/definir-senha?token=${token}&type=invite`);
+    if (type === 'invite') {
+      if (token) {
+        console.log('✅ Redirecionando para definir senha com token');
+        router.push(`/definir-senha?token=${token}&type=invite`);
+      } else {
+        console.log('⚠️ Convite sem token, redirecionando para definir senha sem token');
+        router.push(`/definir-senha?type=invite`);
+      }
       return;
     }
     
     // Se for outro tipo de autenticação (magic link, etc), redirecionar para atendimentos
     if (type) {
+      console.log('🔄 Outro tipo de auth, redirecionando para atendimentos');
       router.push('/atendimentos');
       return;
     }
     
     // Fallback padrão
+    console.log('🏠 Fallback, redirecionando para login');
     router.push('/login');
   }, [router, searchParams]);
 

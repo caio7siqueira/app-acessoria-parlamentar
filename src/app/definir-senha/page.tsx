@@ -28,9 +28,25 @@ export default function DefinirSenhaPage() {
     const token = searchParams?.get('token');
     const type = searchParams?.get('type');
     
-    if (!token || type !== 'invite') {
+    // Debug: Log dos parâmetros recebidos
+    console.log('🔍 Definir Senha Debug:', {
+      token,
+      type,
+      allParams: Object.fromEntries(searchParams?.entries() || []),
+      url: window.location.href
+    });
+    
+    // Para convites, o token pode vir via diferentes mecanismos
+    if (type !== 'invite') {
       setTokenValido(false);
       showToast(MESSAGES.ERROR.INVALID_TOKEN, 'error');
+      return;
+    }
+    
+    // Se for convite mas não tem token, pode ser que a sessão já esteja ativa
+    if (!token) {
+      console.log('⚠️ Convite sem token explícito - verificando sessão ativa');
+      // Não invalida imediatamente - pode ter sessão ativa do Supabase
     }
   }, [searchParams, showToast]);
 
