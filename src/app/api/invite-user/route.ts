@@ -41,9 +41,24 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: MESSAGES.ERROR.USER_EXISTS }, { status: 400 })
         }
 
-        // Enviar convite via admin
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-        const redirectTo = `${appUrl}/auth/callback?type=invite`
+        // Enviar convite via admin - detectar URL automaticamente
+        const host = request.headers.get('host');
+        const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
+            || process.env.NEXT_PUBLIC_SITE_URL 
+            || (host ? `${protocol}://${host}` : 'http://localhost:3000');
+            
+        const redirectTo = `${baseUrl}/auth/callback?type=invite`;
+        
+        // Log para depuração
+        console.log('🔗 Enviando convite com redirectTo:', redirectTo);
+        console.log('📊 Variáveis:', {
+            NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+            host,
+            protocol,
+            baseUrl
+        });
+        
         const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
             redirectTo,
         })

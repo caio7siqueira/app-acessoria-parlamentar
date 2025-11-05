@@ -37,13 +37,13 @@ export default function ConfiguracoesPage() {
         .select('id, nome, email, role, ativo, criado_em')
         .eq('ativo', true)
         .order('criado_em', { ascending: false });
-      
+
       if (error) {
         console.error('Erro ao carregar usuários:', error);
         setUsuarios([]);
         return;
       }
-      
+
       setUsuarios(data || []);
     } catch (err) {
       console.error('Erro ao carregar usuários:', err);
@@ -195,7 +195,7 @@ export default function ConfiguracoesPage() {
                         <div>
                           <p className="text-sm font-medium">{u.nome}</p>
                           <p className="text-xs text-gray-500">
-                            {u.email} • Role: {u.role} • 
+                            {u.email} • Role: {u.role} •
                             Criado em {new Date(u.criado_em).toLocaleDateString('pt-BR')}
                           </p>
                         </div>
