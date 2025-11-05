@@ -114,38 +114,38 @@ Para notificações automáticas, configure Vercel Cron:
 2. Crie a API route `src/app/api/notifications/check/route.ts`:
 
 ```typescript
-import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/services/supabaseClient';
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/services/supabaseClient";
 
 export async function GET() {
   try {
     // Verificar atendimentos urgentes
     const { data: urgentes } = await supabaseAdmin
-      .from('atendimentos')
-      .select('*')
-      .eq('prazo_urgencia', 'Urgente')
-      .neq('status', 'Concluído');
+      .from("atendimentos")
+      .select("*")
+      .eq("prazo_urgencia", "Urgente")
+      .neq("status", "Concluído");
 
     // Verificar prazos vencendo em 3 dias
     const dataLimite = new Date();
     dataLimite.setDate(dataLimite.getDate() + 3);
-    
+
     const { data: prazoVencendo } = await supabaseAdmin
-      .from('atendimentos')
-      .select('*')
-      .lte('prazo_data', dataLimite.toISOString().split('T')[0])
-      .neq('status', 'Concluído');
+      .from("atendimentos")
+      .select("*")
+      .lte("prazo_data", dataLimite.toISOString().split("T")[0])
+      .neq("status", "Concluído");
 
     // Enviar notificações (implementar Web Push aqui)
-    
+
     return NextResponse.json({
       urgentes: urgentes?.length || 0,
       prazoVencendo: prazoVencendo?.length || 0,
-      executadoEm: new Date().toISOString()
+      executadoEm: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Erro ao verificar notificações:', error);
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+    console.error("Erro ao verificar notificações:", error);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
 ```
@@ -182,28 +182,29 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'DENY'
+            key: "X-Frame-Options",
+            value: "DENY",
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
           },
           {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
-          }
-        ]
-      }
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
+          },
+        ],
+      },
     ];
-  }
+  },
 };
 
 module.exports = nextConfig;
@@ -212,11 +213,13 @@ module.exports = nextConfig;
 ### 2. Variáveis Sensíveis
 
 **✅ Seguras (podem estar no .env.local):**
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
 
 **❌ Privadas (apenas no servidor):**
+
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXTAUTH_SECRET`
 - `VAPID_PRIVATE_KEY`
@@ -227,17 +230,20 @@ Para evitar abuso, configure rate limiting nas API routes:
 
 ```typescript
 // Exemplo: src/app/api/atendimentos/route.ts
-import { NextRequest } from 'next/server';
+import { NextRequest } from "next/server";
 
 const rateLimiter = new Map();
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  const ip = request.headers.get("x-forwarded-for") || "unknown";
   const now = Date.now();
   const windowMs = 60 * 1000; // 1 minuto
   const maxRequests = 10;
 
-  const requests = rateLimiter.get(ip) || { count: 0, resetTime: now + windowMs };
+  const requests = rateLimiter.get(ip) || {
+    count: 0,
+    resetTime: now + windowMs,
+  };
 
   if (now > requests.resetTime) {
     requests.count = 1;
@@ -249,7 +255,7 @@ export async function POST(request: NextRequest) {
   rateLimiter.set(ip, requests);
 
   if (requests.count > maxRequests) {
-    return new Response('Rate limit exceeded', { status: 429 });
+    return new Response("Rate limit exceeded", { status: 429 });
   }
 
   // Continuar com a lógica da API...
@@ -286,6 +292,7 @@ Teste a instalação do PWA:
 ### 1. Deploy Automático
 
 A Vercel faz deploy automático quando:
+
 - Fazer push na branch `main` (produção)
 - Fazer push em outras branches (preview)
 - Abrir Pull Request (preview)
@@ -330,6 +337,7 @@ Monitore logs:
 ### 3. Performance
 
 Monitore performance:
+
 - **First Contentful Paint (FCP)**
 - **Largest Contentful Paint (LCP)**
 - **Cumulative Layout Shift (CLS)**
@@ -340,6 +348,7 @@ Monitore performance:
 ### Problemas Comuns
 
 **Build falha:**
+
 ```bash
 # Teste local
 npm run build
@@ -349,15 +358,18 @@ npm run type-check
 ```
 
 **Variáveis de ambiente não funcionam:**
+
 - Verifique se começam com `NEXT_PUBLIC_` para uso no frontend
 - Redeploy após adicionar novas variáveis
 
 **PWA não instala:**
+
 - Verifique HTTPS
 - Confirme se `manifest.json` está acessível
 - Teste em diferentes browsers
 
 **API routes com erro 500:**
+
 - Verifique logs na Vercel
 - Teste endpoints localmente
 - Confirme variáveis de ambiente
@@ -417,6 +429,7 @@ Para debugar em produção:
 **Solução**: ✅ **JÁ CORRIGIDO** - `.vercelignore` e `.gitignore` configurados
 
 Verificar:
+
 ```bash
 # .gitignore deve conter:
 .next/
@@ -432,12 +445,14 @@ out/
 **Possíveis causas**:
 
 1. **Dependências faltando**:
+
    ```bash
    npm install
    npm run build  # Testar localmente
    ```
 
 2. **Imports incorretos**:
+
    - Verifique caminhos com `@/`
    - Certifique-se que `tsconfig.json` tem `baseUrl` e `paths`
 
@@ -450,6 +465,7 @@ out/
 **Problema**: Funções serverless demorando muito (>10s no free plan)
 
 **Soluções**:
+
 1. Otimize queries do Supabase
 2. Use paginação em listagens grandes
 3. Considere fazer upgrade do plano Vercel
@@ -459,6 +475,7 @@ out/
 **Problema**: Variáveis de ambiente incorretas
 
 **Verificar**:
+
 1. `NEXT_PUBLIC_SUPABASE_URL` está correto
 2. `NEXT_PUBLIC_SUPABASE_ANON_KEY` está correto
 3. RLS policies estão configuradas no Supabase
@@ -466,6 +483,7 @@ out/
 ### Build passa mas app não funciona
 
 **Checklist**:
+
 1. ✅ Variáveis de ambiente configuradas
 2. ✅ Migrations aplicadas no Supabase
 3. ✅ RLS policies ativas
@@ -475,11 +493,13 @@ out/
 ### Logs de Debug
 
 **Ver logs na Vercel**:
+
 1. Dashboard → Projeto → "Functions"
 2. Clique em "View Function Logs"
 3. Filtrar por erro ou warning
 
 **Ver logs do Supabase**:
+
 1. Dashboard Supabase → "Logs"
 2. Verificar query errors, auth errors
 
@@ -506,6 +526,7 @@ Antes de fazer deploy, verifique:
 **Próximo passo**: Deploy pronto! Sistema está em produção! 🎉
 
 **Dicas finais:**
+
 - Monitore logs regularmente
 - Teste funcionalidades críticas após deploy
 - Configure alertas para erros
